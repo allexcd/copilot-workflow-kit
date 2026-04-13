@@ -1,6 +1,38 @@
-# VS Code / GitHub Copilot Compatibility Notes
+# Copilot Workflow Kit
 
-This kit uses currently supported repository files that Copilot auto-loads:
+A workflow orchestration kit for GitHub Copilot in VS Code. Structured rules, agents, skills, and prompts that make Copilot plan before building, verify before closing, and self-improve after corrections.
+
+## Install
+
+Run this inside your project directory:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/allexcd/copilot-workflow-kit/main/install.sh)
+```
+
+Re-run with `--force` to update existing files:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/allexcd/copilot-workflow-kit/main/install.sh) --force
+```
+
+Or use this repo as a [GitHub template](https://github.com/allexcd/copilot-workflow-kit/generate) for new projects.
+
+## What's Included
+
+| Category | Files | Purpose |
+|---|---|---|
+| Workflow rules | `docs/workflow/workflow-orchestration.md` | Core methodology — plan mode, verification, subagents, elegance, self-improvement, autonomous bug fixing |
+| Instructions | `.github/copilot-instructions.md`, `.github/instructions/backend.instructions.md` | Auto-loaded rules for every Copilot conversation |
+| Agents | `.github/agents/deep-reviewer.agent.md`, `fast-implementer.agent.md` | Specialized agents for code review and execution |
+| Prompts | `.github/prompts/kickoff.prompt.md`, `verify-and-close.prompt.md`, `elegant-fix.prompt.md` | Reusable slash-command prompts |
+| Skills | `.github/skills/*/SKILL.md` | Domain-specific behaviors (plan-mode, verification, demand-elegance, self-improvement, subagent-strategy, autonomous-bug-fixing) |
+| Task tracking | `tasks/todo.md`, `tasks/lessons.md` | Plan tracking and self-improvement log |
+| Root config | `AGENTS.md` | Default instructions for all agents |
+
+## Compatibility
+
+Uses currently supported repository files that Copilot auto-loads:
 - `.github/copilot-instructions.md`
 - `.github/instructions/*.instructions.md`
 - `.github/prompts/*.prompt.md`
