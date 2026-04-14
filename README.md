@@ -100,6 +100,52 @@ Uses repository files that Copilot auto-loads:
 - `.github/prompts/*.prompt.md`
 - `AGENTS.md`
 
+## Releasing a New Version
+
+Requires the [`gh` CLI](https://cli.github.com) to be installed and authenticated (`gh auth login`).
+
+```bash
+npm run release
+```
+
+The script will:
+1. Prompt for a version bump — `patch`, `minor`, or `major`
+2. Update `package.json` with the new version
+3. Commit and tag (`v1.x.x`)
+4. Push the commit and tag to GitHub
+5. Create a GitHub release with notes generated from git log
+
+Then publish to npm manually:
+
+```bash
+npm publish
+```
+
+### Automated npm publish via GitHub Actions
+
+To publish automatically when a tag is pushed, add `.github/workflows/publish.yml` to this repo:
+
+```yaml
+name: Publish to npm
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+Add your npm token to GitHub → Settings → Secrets → `NPM_TOKEN`. With this in place, `npm run release` triggers a publish automatically — no manual `npm publish` needed.
+
 ## Complementary Tools
 
 **[caveman](https://github.com/JuliusBrussee/caveman)** — Reduces LLM output tokens by ~65% via terse responses. Orthogonal to this kit.

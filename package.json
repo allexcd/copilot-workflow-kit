@@ -25,6 +25,9 @@
     "type": "git",
     "url": "https://github.com/allexcd/copilot-workflow-kit"
   },
+  "scripts": {
+    "release": "node scripts/release.js"
+  },
   "engines": {
     "node": ">=16.0.0"
   }
