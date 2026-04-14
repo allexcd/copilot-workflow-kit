@@ -1,0 +1,77 @@
+# Copilot Workflow Kit — Auto-Update
+#
+# Checks for new versions of copilot-workflow-kit weekly and opens a PR
+# with updated kit-managed files. User-owned files are never modified.
+#
+# Adjust the cron schedule below if needed.
+
+name: Update Copilot Workflow Kit
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Weekly on Monday at 9 AM UTC
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check for kit updates
+        id: update
+        run: |
+          # Get currently installed version from lockfile
+          if [ ! -f .copilot-kit.lock ]; then
+            echo "No .copilot-kit.lock found — kit not initialized. Skipping."
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CURRENT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.copilot-kit.lock','utf8')).version)")
+          LATEST=$(npm view copilot-workflow-kit version 2>/dev/null || echo "")
+
+          if [ -z "$LATEST" ]; then
+            echo "Could not fetch latest version from npm. Skipping."
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "Already up-to-date (v$CURRENT)."
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Update available: v$CURRENT → v$LATEST"
+            echo "has_updates=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply updates
+        if: steps.update.outputs.has_updates == 'true'
+        run: npx copilot-workflow-kit@latest update
+
+      - name: Create Pull Request
+        if: steps.update.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update copilot-workflow-kit to v${{ steps.update.outputs.latest }}'
+          title: 'chore: update copilot-workflow-kit to v${{ steps.update.outputs.latest }}'
+          body: |
+            Automated update of copilot-workflow-kit from v${{ steps.update.outputs.current }} to v${{ steps.update.outputs.latest }}.
+
+            Only **kit-managed** files are updated. User-owned files (instructions, AGENTS.md, tasks/) are not modified.
+
+            Review the diff to see what changed, then merge when ready.
+          branch: chore/update-copilot-kit
+          delete-branch: true

@@ -1,0 +1,22 @@
+{
+  "files": [
+    { "path": ".github/copilot-instructions.md", "ownership": "user-owned" },
+    { "path": ".github/instructions/backend.instructions.md", "ownership": "user-owned" },
+    { "path": ".github/agents/deep-reviewer.agent.md", "ownership": "kit-managed" },
+    { "path": ".github/agents/fast-implementer.agent.md", "ownership": "kit-managed" },
+    { "path": ".github/prompts/elegant-fix.prompt.md", "ownership": "kit-managed" },
+    { "path": ".github/prompts/kickoff.prompt.md", "ownership": "kit-managed" },
+    { "path": ".github/prompts/verify-and-close.prompt.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/autonomous-bug-fixing/SKILL.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/demand-elegance/SKILL.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/plan-mode/SKILL.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/self-improvement/SKILL.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/subagent-strategy/SKILL.md", "ownership": "kit-managed" },
+    { "path": ".github/skills/verification/SKILL.md", "ownership": "kit-managed" },
+    { "path": "AGENTS.md", "ownership": "user-owned" },
+    { "path": "docs/workflow/workflow-orchestration.md", "ownership": "kit-managed" },
+    { "path": "tasks/todo.md", "ownership": "user-owned" },
+    { "path": "tasks/lessons.md", "ownership": "user-owned" },
+    { "path": ".github/workflows/update-copilot-kit.yml", "ownership": "user-owned" }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "copilot-workflow-kit",
+  "version": "1.0.0",
+  "description": "Workflow orchestration kit for GitHub Copilot in VS Code — plan, verify, self-improve.",
+  "license": "MIT",
+  "bin": {
+    "copilot-workflow-kit": "bin/cli.js",
+    "cwk": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "kit-manifest.json"
+  ],
+  "keywords": [
+    "copilot",
+    "vscode",
+    "workflow",
+    "agents",
+    "skills",
+    "prompts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/allexcd/copilot-workflow-kit"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

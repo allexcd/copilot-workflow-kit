@@ -7,52 +7,109 @@ A workflow orchestration kit for GitHub Copilot in VS Code. Structured rules, ag
 Run this inside your project directory:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/allexcd/copilot-workflow-kit/main/install.sh)
+npx copilot-workflow-kit init
 ```
 
-Re-run with `--force` to update existing files:
+This scaffolds all kit files into your project and creates a `.copilot-kit.lock` file to track versions.
+
+Commit the scaffolded files:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/allexcd/copilot-workflow-kit/main/install.sh) --force
+git add .github/copilot-instructions.md \
+        .github/instructions/ \
+        .github/agents/ \
+        .github/prompts/ \
+        .github/skills/ \
+        .github/workflows/update-copilot-kit.yml \
+        AGENTS.md docs/ tasks/ .copilot-kit.lock
+git commit -m "chore: add copilot-workflow-kit"
 ```
 
-Or use this repo as a [GitHub template](https://github.com/allexcd/copilot-workflow-kit/generate) for new projects.
+## Update
+
+When a new kit version is published:
+
+```bash
+npx copilot-workflow-kit@latest update
+```
+
+The update command uses a **file ownership model** to preserve your customizations:
+
+| Tier | Behavior | Files |
+|------|----------|-------|
+| **Kit-managed** | Auto-updated to latest version | Skills, agents, prompts, workflow docs |
+| **User-owned** | Never overwritten by update | `copilot-instructions.md`, `AGENTS.md`, `backend.instructions.md`, `tasks/*` |
+
+Kit-managed files that you modified locally are skipped with a warning. Use `--force` to overwrite them.
+
+```bash
+npx copilot-workflow-kit@latest update --dry-run  # Preview changes
+npx copilot-workflow-kit@latest update --force     # Force-update modified files
+```
+
+### Automated updates via GitHub Actions
+
+The `init` command scaffolds a GitHub Actions workflow at `.github/workflows/update-copilot-kit.yml`. It runs weekly, checks for new kit versions on npm, and opens a PR with only kit-managed file changes. No setup required — it works out of the box once committed.
+
+## CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `cwk init` | Scaffold all kit files into the project |
+| `cwk update` | Update kit-managed files to the latest version |
+| `cwk status` | Show the state of each kit file (up-to-date, modified, outdated) |
+| `cwk diff` | Show differences between installed and latest kit files |
+| `cwk diff --all` | Include user-owned files in diff output (suggested changes) |
+
+`cwk` is an alias for `copilot-workflow-kit`.
+
+## Customizing the Kit
+
+**User-owned files** are yours to modify freely. They are scaffolded once and never touched by `update`:
+
+- `.github/copilot-instructions.md` — Add project-specific rules
+- `.github/instructions/backend.instructions.md` — Adapt to your language/framework
+- `AGENTS.md` — Add project-specific agent defaults
+- `tasks/todo.md`, `tasks/lessons.md` — Used during development
+
+**Kit-managed files** receive upstream improvements automatically. If you need to customize a skill, agent, or prompt:
+
+1. Create a *new* file alongside the kit version (e.g., `.github/skills/my-custom-skill/SKILL.md`)
+2. Leave kit-managed originals untouched so `update` continues to work
+
+This way your customizations live alongside the kit without conflicts.
 
 ## What's Included
 
-| Category | Files | Purpose |
+| Category | Files | Ownership |
 |---|---|---|
-| Workflow rules | `docs/workflow/workflow-orchestration.md` | Core methodology — plan mode, verification, subagents, elegance, self-improvement, autonomous bug fixing |
-| Instructions | `.github/copilot-instructions.md`, `.github/instructions/backend.instructions.md` | Auto-loaded rules for every Copilot conversation |
-| Agents | `.github/agents/deep-reviewer.agent.md`, `fast-implementer.agent.md` | Specialized agents for code review and execution |
-| Prompts | `.github/prompts/kickoff.prompt.md`, `verify-and-close.prompt.md`, `elegant-fix.prompt.md` | Reusable slash-command prompts |
-| Skills | `.github/skills/*/SKILL.md` | Domain-specific behaviors (plan-mode, verification, demand-elegance, self-improvement, subagent-strategy, autonomous-bug-fixing) |
-| Task tracking | `tasks/todo.md`, `tasks/lessons.md` | Plan tracking and self-improvement log |
-| Root config | `AGENTS.md` | Default instructions for all agents |
+| Workflow rules | `docs/workflow/workflow-orchestration.md` | Kit-managed |
+| Instructions | `.github/copilot-instructions.md`, `.github/instructions/backend.instructions.md` | User-owned |
+| Agents | `.github/agents/deep-reviewer.agent.md`, `.github/agents/fast-implementer.agent.md` | Kit-managed |
+| Prompts | `.github/prompts/kickoff.prompt.md`, `.github/prompts/verify-and-close.prompt.md`, `.github/prompts/elegant-fix.prompt.md` | Kit-managed |
+| Skills | `.github/skills/{autonomous-bug-fixing,demand-elegance,plan-mode,self-improvement,subagent-strategy,verification}/SKILL.md` | Kit-managed |
+| Task tracking | `tasks/todo.md`, `tasks/lessons.md` | User-owned |
+| Root config | `AGENTS.md` | User-owned |
+| CI | `.github/workflows/update-copilot-kit.yml` | User-owned |
 
 ## Compatibility
 
-Uses currently supported repository files that Copilot auto-loads:
+Uses repository files that Copilot auto-loads:
 - `.github/copilot-instructions.md`
 - `.github/instructions/*.instructions.md`
 - `.github/prompts/*.prompt.md`
 - `AGENTS.md`
 
-If VS Code Chat Customizations "Agents/Skills/Hooks" UI does not auto-populate from repo,
-that UI may be local-profile managed in your build. The above files still work as repo-level guidance.
-
 ## Complementary Tools
 
-**[caveman](https://github.com/JuliusBrussee/caveman)** — Reduces LLM output tokens by ~65% by switching to terse "caveman-speak" responses, without sacrificing technical accuracy. Orthogonal to this workflow kit — pair them freely.
+**[caveman](https://github.com/JuliusBrussee/caveman)** — Reduces LLM output tokens by ~65% via terse responses. Orthogonal to this kit.
 
-Install for Copilot:
-```
+```bash
 npx skills add JuliusBrussee/caveman -a github-copilot
 ```
 
-**[graphify](https://github.com/safishamsi/graphify)** — Reduces LLM input tokens by building a knowledge graph from your codebase (code, docs, PDFs, images, video). Agents navigate by graph structure instead of scanning raw files — 71x fewer tokens per query on large corpora. Run it on your own projects, not on this config repo.
+**[graphify](https://github.com/safishamsi/graphify)** — Reduces LLM input tokens via knowledge graph. 71x fewer tokens per query on large codebases.
 
-Install for Copilot:
-```
+```bash
 pip install graphifyy && graphify install --platform copilot
 ```
