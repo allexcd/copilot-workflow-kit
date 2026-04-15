@@ -16,7 +16,7 @@ const {
  * @param {string[]} flags
  */
 async function uninstall(flags) {
-  const { force: _force, dryRun, all } = parseFlags(flags);
+  const { dryRun, all } = parseFlags(flags);
   const targetDir = process.cwd();
   const lock = readLockfile(targetDir);
 
