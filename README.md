@@ -1,5 +1,8 @@
 # Copilot Workflow Kit
 
+[![npm version](https://img.shields.io/npm/v/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
+[![npm downloads](https://img.shields.io/npm/dm/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
+
 A workflow orchestration kit for GitHub Copilot in VS Code. Structured rules, agents, skills, and prompts that make Copilot plan before building, verify before closing, and self-improve after corrections.
 
 ## Install
