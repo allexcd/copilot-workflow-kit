@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const {
   loadManifest,
   getKitVersion,
@@ -69,7 +70,27 @@ async function init(flags) {
 
     const label = entry.ownership === 'user-owned' ? '(user-owned)' : '(kit-managed)';
     console.log(`  ✓     ${entry.path}  ${label}`);
+
+    // Ensure hook is executable when scaffolded
+    if (entry.path === '.githooks/pre-push' && !force) {
+      try {
+        fs.chmodSync(targetPath, 0o755);
+      } catch {
+        // non-fatal
+      }
+    }
+
     installed++;
+  }
+
+  // Configure local Git hooks path for pre-push branch name validation
+  if (fs.existsSync(path.join(targetDir, '.git'))) {
+    try {
+      execSync('git config core.hooksPath .githooks', { cwd: targetDir, stdio: 'ignore' });
+      console.log('  ✓     git hooks enabled via core.hooksPath=.githooks');
+    } catch {
+      console.log('  ⚠     could not set git hooksPath automatically (run: git config core.hooksPath .githooks)');
+    }
   }
 
   // Write lockfile

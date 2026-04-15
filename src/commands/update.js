@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const {
   loadManifest,
   getKitVersion,
@@ -90,6 +91,13 @@ async function update(flags) {
     // Safe to update: file matches lock hash or --force
     if (!dryRun) {
       fs.copyFileSync(templatePath, targetPath);
+      if (entry.path === '.githooks/pre-push') {
+        try {
+          fs.chmodSync(targetPath, 0o755);
+        } catch {
+          // non-fatal
+        }
+      }
       newLockFiles[entry.path] = {
         ownership: entry.ownership,
         hash: hashFile(targetPath),
@@ -100,6 +108,13 @@ async function update(flags) {
   }
 
   if (!dryRun) {
+    if (fs.existsSync(path.join(targetDir, '.git'))) {
+      try {
+        execSync('git config core.hooksPath .githooks', { cwd: targetDir, stdio: 'ignore' });
+      } catch {
+        // non-fatal
+      }
+    }
     writeLockfile(targetDir, { version, files: newLockFiles });
   }
 

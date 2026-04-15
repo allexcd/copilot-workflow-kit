@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Validate current branch name before push.
+# Allowed: feat|fix|chore|docs|refactor|test|hotfix + slash + lowercase-hyphen slug.
+
+BRANCH="$(git symbolic-ref --quiet --short HEAD || true)"
+
+# Ignore detached HEAD (tags, rebases, etc.)
+if [[ -z "$BRANCH" ]]; then
+  exit 0
+fi
+
+# Allow main/master (branch protection should still block direct pushes remotely)
+if [[ "$BRANCH" =~ ^(main|master)$ ]]; then
+  exit 0
+fi
+
+PATTERN='^(feat|fix|chore|docs|refactor|test|hotfix)/[a-z0-9-]+$'
+
+if [[ ! "$BRANCH" =~ $PATTERN ]]; then
+  echo ""
+  echo "❌ Invalid branch name: $BRANCH"
+  echo ""
+  echo "Expected format: <type>/<short-description>"
+  echo "Allowed types: feat, fix, chore, docs, refactor, test, hotfix"
+  echo "Example: feat/add-oauth-login"
+  echo ""
+  echo "If you really need to bypass once: git push --no-verify"
+  echo ""
+  exit 1
+fi
+
+exit 0
