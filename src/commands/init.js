@@ -69,6 +69,7 @@ async function init(flags) {
 
     const label = entry.ownership === 'user-owned' ? '(user-owned)' : '(kit-managed)';
     console.log(`  ✓     ${entry.path}  ${label}`);
+
     installed++;
   }
 

@@ -45,15 +45,6 @@ jobs:
                 }
               },
               {
-                "type": "branch_name_pattern",
-                "parameters": {
-                  "name": "",
-                  "negate": false,
-                  "operator": "regex",
-                  "pattern": "^(feat|fix|chore|docs|refactor|test|hotfix)/[a-z0-9-]+"
-                }
-              },
-              {
                 "type": "required_status_checks",
                 "parameters": {
                   "strict_required_status_checks_policy": false,
