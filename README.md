@@ -196,28 +196,6 @@ test/add-status-unit-tests
 hotfix/fix-broken-publish
 ```
 
-
-### Pre-push branch name validation (repo contributors)
-
-This repository includes a local Git `pre-push` hook at `.githooks/pre-push` for contributors to this repo.
-
-Enable it once after cloning:
-
-```bash
-git config core.hooksPath .githooks
-chmod +x .githooks/pre-push
-```
-
-This blocks invalid branch names before a PR is opened.
-
-> Note: this hook is **not** installed by `npx copilot-workflow-kit init` for package consumers.
-
-To bypass once (not recommended):
-
-```bash
-git push --no-verify
-```
-
 ### PR Titles
 
 Pull request titles must follow [Conventional Commits](https://www.conventionalcommits.org/) format:
@@ -303,7 +281,7 @@ docs(readme): update contributing section with naming conventions
 
 | Rule | When enforced |
 |------|---------------|
-| Branch name pattern (local pre-push hook) | On `git push` — local hook blocks invalid names |
+| Branch name pattern | On `git push` — push rejected immediately |
 | PR title format | On PR open/edit — CI check blocks merge |
 | Lint | On PR open + every new commit — CI check blocks merge |
 | Tests (Node 18, 20, 22) | On PR open + every new commit — CI check blocks merge |
@@ -314,6 +292,5 @@ docs(readme): update contributing section with naming conventions
 
 These rules are enforced by:
 - `.github/workflows/branch-ruleset.yml` — applies a GitHub Ruleset via API (branch naming, push protection, required status checks, approvals)
-- `.githooks/pre-push` — validates branch naming locally before push
 - `.github/workflows/pr-title.yml` — validates PR title format on every PR
 - `.github/workflows/ci.yml` — runs lint, tests, and build checks
