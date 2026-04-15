@@ -51,6 +51,31 @@ npx copilot-workflow-kit@latest update --force     # Force-update locally modifi
 
 The `init` command scaffolds a GitHub Actions workflow at `.github/workflows/update-copilot-kit.yml`. It runs weekly, checks for new kit versions on npm, and opens a PR with only kit-managed file changes. No setup required — it works out of the box once committed.
 
+## Uninstall
+
+To remove all kit-installed files from your project:
+
+```bash
+npx copilot-workflow-kit uninstall
+```
+
+By default this removes only **kit-managed** files (skills, agents, prompts, workflow docs) and the `.copilot-kit.lock` lockfile. **User-owned** files are left untouched.
+
+To remove everything — including user-owned files like `AGENTS.md`, `tasks/*`, and `copilot-instructions.md`:
+
+```bash
+npx copilot-workflow-kit uninstall --all
+```
+
+Preview what would be removed without deleting anything:
+
+```bash
+npx copilot-workflow-kit uninstall --dry-run
+npx copilot-workflow-kit uninstall --all --dry-run
+```
+
+Empty directories left behind after file removal are cleaned up automatically. Directories that still contain other (non-kit) files are preserved.
+
 ## CLI Commands
 
 | Command | Purpose |
@@ -60,6 +85,9 @@ The `init` command scaffolds a GitHub Actions workflow at `.github/workflows/upd
 | `cwk status` | Show the state of each kit file (up-to-date, modified, outdated) |
 | `cwk diff` | Show differences between installed and latest kit files |
 | `cwk diff --all` | Include user-owned files in diff output (suggested changes) |
+| `cwk uninstall` | Remove kit-managed files and the lockfile |
+| `cwk uninstall --all` | Also remove user-owned files (full cleanup) |
+| `cwk uninstall --dry-run` | Preview what would be removed without deleting |
 
 `cwk` is an alias for `copilot-workflow-kit`.
 
