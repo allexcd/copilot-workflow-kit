@@ -14,7 +14,7 @@ const {
  * Status command — show the state of each kit file.
  * @param {string[]} flags
  */
-async function status(flags) {
+async function status(_flags) {
   const targetDir = process.cwd();
   const manifest = loadManifest();
   const version = getKitVersion();

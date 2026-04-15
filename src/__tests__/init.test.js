@@ -1,0 +1,113 @@
+'use strict';
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { LOCKFILE_NAME } = require('../../src/utils');
+
+let tmpDir;
+let mockTemplateDir;
+const originalCwd = process.cwd;
+
+// Minimal 2-file manifest for testing
+const mockManifest = {
+  files: [
+    { path: 'managed/file.md', ownership: 'kit-managed' },
+    { path: 'user/file.md', ownership: 'user-owned' },
+  ],
+};
+
+beforeEach(() => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cwk-init-'));
+  mockTemplateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cwk-tpl-'));
+
+  // Create template files
+  fs.mkdirSync(path.join(mockTemplateDir, 'managed'), { recursive: true });
+  fs.mkdirSync(path.join(mockTemplateDir, 'user'), { recursive: true });
+  fs.writeFileSync(path.join(mockTemplateDir, 'managed', 'file.md'), 'managed content', 'utf8');
+  fs.writeFileSync(path.join(mockTemplateDir, 'user', 'file.md'), 'user content', 'utf8');
+
+  process.cwd = () => tmpDir;
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+
+  jest.mock('../../src/utils', () => {
+    const actual = jest.requireActual('../../src/utils');
+    const mockPath = require('path');
+    return {
+      ...actual,
+      loadManifest: () => mockManifest,
+      getKitVersion: () => '2.0.0',
+      getTemplatePath: (rel) => mockPath.join(mockTemplateDir, rel),
+    };
+  });
+});
+
+afterEach(() => {
+  process.cwd = originalCwd;
+  console.log.mockRestore();
+  jest.restoreAllMocks();
+  jest.resetModules();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.rmSync(mockTemplateDir, { recursive: true, force: true });
+});
+
+function requireInit() {
+  return require('../../src/commands/init');
+}
+
+describe('init command', () => {
+  it('scaffolds all files and writes lockfile on first run', async () => {
+    const init = requireInit();
+    await init([]);
+
+    expect(fs.existsSync(path.join(tmpDir, 'managed', 'file.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'user', 'file.md'))).toBe(true);
+    expect(fs.readFileSync(path.join(tmpDir, 'managed', 'file.md'), 'utf8')).toBe('managed content');
+
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.version).toBe('2.0.0');
+    expect(lock.files['managed/file.md'].ownership).toBe('kit-managed');
+    expect(lock.files['user/file.md'].ownership).toBe('user-owned');
+  });
+
+  it('exits early if lockfile exists and --force is not passed', async () => {
+    const { writeLockfile } = jest.requireActual('../../src/utils');
+    writeLockfile(tmpDir, { version: '1.0.0', files: {} });
+
+    const init = requireInit();
+    await init([]);
+
+    // Files should NOT be scaffolded
+    expect(fs.existsSync(path.join(tmpDir, 'managed', 'file.md'))).toBe(false);
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('already initialized');
+  });
+
+  it('re-scaffolds with --force even if lockfile exists', async () => {
+    const { writeLockfile } = jest.requireActual('../../src/utils');
+    writeLockfile(tmpDir, { version: '1.0.0', files: {} });
+
+    const init = requireInit();
+    await init(['--force']);
+
+    expect(fs.existsSync(path.join(tmpDir, 'managed', 'file.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'user', 'file.md'))).toBe(true);
+  });
+
+  it('skips existing files without --force but still tracks them in lockfile', async () => {
+    // Pre-create one file with different content
+    fs.mkdirSync(path.join(tmpDir, 'managed'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'managed', 'file.md'), 'my custom content', 'utf8');
+
+    const init = requireInit();
+    await init([]);
+
+    // File should keep custom content (not overwritten)
+    expect(fs.readFileSync(path.join(tmpDir, 'managed', 'file.md'), 'utf8')).toBe('my custom content');
+
+    // But it should still be tracked in lockfile
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.files['managed/file.md']).toBeDefined();
+    expect(lock.files['managed/file.md'].ownership).toBe('kit-managed');
+  });
+});

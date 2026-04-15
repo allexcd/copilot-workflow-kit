@@ -50,7 +50,7 @@ function hashFile(filePath) {
  */
 function readLockfile(targetDir) {
   const lockPath = path.join(targetDir, LOCKFILE_NAME);
-  if (!fs.existsSync(lockPath)) return null;
+  if (!fs.existsSync(lockPath)) {return null;}
   return JSON.parse(fs.readFileSync(lockPath, 'utf8'));
 }
 
