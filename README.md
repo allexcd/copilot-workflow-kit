@@ -1,7 +1,10 @@
 # Copilot Workflow Kit
 
+[![CI](https://github.com/allexcd/copilot-workflow-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/allexcd/copilot-workflow-kit/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
 [![npm downloads](https://img.shields.io/npm/dm/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
+[![License: MIT](https://img.shields.io/npm/l/copilot-workflow-kit)](LICENSE)
+[![Node.js >=16](https://img.shields.io/node/v/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
 
 A workflow orchestration kit for GitHub Copilot in VS Code. Structured rules, agents, skills, and prompts that make Copilot plan before building, verify before closing, and self-improve after corrections.
 
