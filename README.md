@@ -187,12 +187,21 @@ Examples:
 
 ### Merging Rules
 
-- All changes to `main` must go through a PR — direct pushes are blocked
-- PR requires at least 1 approval before merging
-- New commits pushed to a branch with an approved PR dismiss the approval — re-review required
-- Force pushes and branch deletion on `main` are blocked
+| Rule | When caught |
+|------|-------------|
+| Branch name pattern | On `git push` — push rejected immediately |
+| PR title format | On PR open/edit — CI check blocks merge |
+| Lint | On PR open + every new commit — CI check blocks merge |
+| Tests (Node 18, 20, 22) | On PR open + every new commit — CI check blocks merge |
+| Build / pack check | On PR open + every new commit — CI check blocks merge |
+| 1 approval required | At merge time |
+| Stale approval on new push | At merge time — approval dismissed, re-review required |
+| No direct push to `main` | On `git push` — push rejected immediately |
 
-These rules are enforced by `.github/workflows/branch-ruleset.yml` (applied via GitHub Rulesets API) and `.github/workflows/pr-title.yml` (CI check on every PR).
+These rules are enforced by:
+- `.github/workflows/branch-ruleset.yml` — applies GitHub Ruleset via API (branch naming, push protection, required status checks, approvals)
+- `.github/workflows/pr-title.yml` — validates PR title format
+- `.github/workflows/ci.yml` — runs lint, tests, and build checks
 
 ## Complementary Tools
 

@@ -50,6 +50,20 @@ jobs:
                   "operator": "regex",
                   "pattern": "^(feat|fix|chore|docs|refactor|test|hotfix)/[a-z0-9-]+"
                 }
+              },
+              {
+                "type": "required_status_checks",
+                "parameters": {
+                  "strict_required_status_checks_policy": false,
+                  "required_status_checks": [
+                    { "context": "check-pr-title" },
+                    { "context": "lint" },
+                    { "context": "test (18)" },
+                    { "context": "test (20)" },
+                    { "context": "test (22)" },
+                    { "context": "build" }
+                  ]
+                }
               }
             ]
           }'

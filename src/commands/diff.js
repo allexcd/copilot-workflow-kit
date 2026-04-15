@@ -34,8 +34,8 @@ function simpleDiff(a, b, label) {
       output.push(` ${lineA}`);
     } else {
       hasChanges = true;
-      if (lineA !== undefined) output.push(`-${lineA}`);
-      if (lineB !== undefined) output.push(`+${lineB}`);
+      if (lineA !== undefined) {output.push(`-${lineA}`);}
+      if (lineB !== undefined) {output.push(`+${lineB}`);}
     }
   }
 
@@ -61,7 +61,7 @@ async function diff(flags) {
 
   for (const entry of manifest.files) {
     // Skip user-owned unless --all
-    if (entry.ownership === 'user-owned' && !all) continue;
+    if (entry.ownership === 'user-owned' && !all) {continue;}
 
     const targetPath = path.join(targetDir, entry.path);
     const templatePath = getTemplatePath(entry.path);
@@ -75,7 +75,7 @@ async function diff(flags) {
     const currentContent = fs.readFileSync(targetPath, 'utf8');
     const templateContent = fs.readFileSync(templatePath, 'utf8');
 
-    if (currentContent === templateContent) continue;
+    if (currentContent === templateContent) {continue;}
 
     const label = entry.ownership === 'user-owned' ? `${entry.path} (user-owned)` : entry.path;
     const result = simpleDiff(currentContent, templateContent, label);
@@ -94,3 +94,4 @@ async function diff(flags) {
 }
 
 module.exports = diff;
+module.exports.simpleDiff = simpleDiff;
