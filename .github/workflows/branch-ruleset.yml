@@ -58,9 +58,9 @@ jobs:
                   "required_status_checks": [
                     { "context": "check-pr-title" },
                     { "context": "lint" },
-                    { "context": "test (18)" },
                     { "context": "test (20)" },
                     { "context": "test (22)" },
+                    { "context": "test (24)" },
                     { "context": "build" }
                   ]
                 }
