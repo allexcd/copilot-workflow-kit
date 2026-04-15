@@ -197,15 +197,20 @@ hotfix/fix-broken-publish
 ```
 
 
-### Pre-push branch name validation
+### Pre-push branch name validation (repo contributors)
 
-The kit installs a local Git `pre-push` hook at `.githooks/pre-push` and configures:
+This repository includes a local Git `pre-push` hook at `.githooks/pre-push` for contributors to this repo.
+
+Enable it once after cloning:
 
 ```bash
 git config core.hooksPath .githooks
+chmod +x .githooks/pre-push
 ```
 
-This blocks pushes for invalid branch names before a PR is opened.
+This blocks invalid branch names before a PR is opened.
+
+> Note: this hook is **not** installed by `npx copilot-workflow-kit init` for package consumers.
 
 To bypass once (not recommended):
 

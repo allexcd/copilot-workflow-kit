@@ -71,10 +71,6 @@
     {
       "path": ".github/workflows/update-copilot-kit.yml",
       "ownership": "user-owned"
-    },
-    {
-      "path": ".githooks/pre-push",
-      "ownership": "kit-managed"
     }
   ]
 }
