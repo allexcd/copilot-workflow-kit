@@ -148,6 +148,54 @@ Add your npm token to GitHub → Settings → Secrets → `NPM_TOKEN`. With this
 
 ## Complementary Tools
 
+## Contributing
+
+### Branch Names
+
+```
+<type>/<short-description>
+```
+
+Types: `feat` `fix` `chore` `docs` `refactor` `test` `hotfix`
+
+Examples: `feat/add-oauth-login`, `fix/token-expiry-crash`, `chore/update-deps`
+
+Rules: lowercase + hyphens only, ≤5 words in description.
+
+### PR Titles
+
+[Conventional Commits](https://www.conventionalcommits.org/) format with optional ticket ID:
+
+```
+<type>(<scope>): [TICKET-123] - <short description>
+```
+
+Examples:
+- `feat(auth): [PROJ-123] - add OAuth2 login with Google`
+- `fix(api): [PROJ-456] - handle null response from payment service`
+- `chore(deps): bump lodash to 4.17.21`
+
+Rules: lowercase description, no trailing period, ≤72 chars total. Scope and ticket ID are optional.
+
+### Commit Messages
+
+Same format as PR titles. Subject ≤50 chars. Add body only when the *why* isn't obvious from the subject.
+
+Examples:
+- `feat(auth): [PROJ-123] - add OAuth2 login with Google`
+- `fix(api): [PROJ-456] - handle null response from payment service`
+
+### Merging Rules
+
+- All changes to `main` must go through a PR — direct pushes are blocked
+- PR requires at least 1 approval before merging
+- New commits pushed to a branch with an approved PR dismiss the approval — re-review required
+- Force pushes and branch deletion on `main` are blocked
+
+These rules are enforced by `.github/workflows/branch-ruleset.yml` (applied via GitHub Rulesets API) and `.github/workflows/pr-title.yml` (CI check on every PR).
+
+## Complementary Tools
+
 **[caveman](https://github.com/JuliusBrussee/caveman)** — Reduces LLM output tokens by ~65% via terse responses. Orthogonal to this kit.
 
 ```bash

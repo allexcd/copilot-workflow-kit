@@ -20,7 +20,7 @@ jobs:
             test
             hotfix
           requireScope: false
-          subjectPattern: ^[a-z].+[^.]$
+          subjectPattern: ^(\[[A-Z0-9]+-[0-9]+\] - )?[a-z].+[^.]$
           subjectPatternError: |
-            PR title subject must start with lowercase and not end with a period.
-            Example: "feat(auth): add oauth login"
+            PR title subject must optionally start with a ticket ID, followed by lowercase description, not ending with a period.
+            Example: "feat(auth): add oauth login" or "feat(auth): [PROJ-123] - add oauth login"
