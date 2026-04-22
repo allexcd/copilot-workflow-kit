@@ -48,9 +48,9 @@ function promptGitChoice(entries) {
     rl.question('  Choice [1/2/3]: ', (answer) => {
       rl.close();
       const choice = answer.trim();
-      if (choice === '1') resolve('git-exclude');
-      else if (choice === '2') resolve('gitignore');
-      else resolve('git-track');
+      if (choice === '1') { resolve('git-exclude'); }
+      else if (choice === '2') { resolve('gitignore'); }
+      else { resolve('git-track'); }
     });
   });
 }
