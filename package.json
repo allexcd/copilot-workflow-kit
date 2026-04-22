@@ -27,7 +27,7 @@
   },
   "scripts": {
     "release": "node scripts/release.js",
-    "lint": "eslint bin/ src/",
+    "lint": "eslint bin/ src/ scripts/",
     "test": "jest"
   },
   "engines": {
