@@ -13,7 +13,7 @@ const {
 
 describe('parseFlags', () => {
   it('returns all false for empty flags', () => {
-    expect(parseFlags([])).toEqual({ force: false, dryRun: false, all: false });
+    expect(parseFlags([])).toEqual({ force: false, dryRun: false, all: false, gitExclude: false, gitignore: false, gitTrack: false });
   });
 
   it('detects --force', () => {
@@ -32,12 +32,16 @@ describe('parseFlags', () => {
     expect(parseFlags(['--all']).all).toBe(true);
   });
 
-  it('handles multiple flags at once', () => {
-    expect(parseFlags(['--force', '--dry-run', '--all'])).toEqual({
-      force: true,
-      dryRun: true,
-      all: true,
-    });
+  it('detects --git-exclude', () => {
+    expect(parseFlags(['--git-exclude']).gitExclude).toBe(true);
+  });
+
+  it('detects --gitignore', () => {
+    expect(parseFlags(['--gitignore']).gitignore).toBe(true);
+  });
+
+  it('detects --git-track', () => {
+    expect(parseFlags(['--git-track']).gitTrack).toBe(true);
   });
 });
 

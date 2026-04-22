@@ -110,4 +110,89 @@ describe('init command', () => {
     expect(lock.files['managed/file.md']).toBeDefined();
     expect(lock.files['managed/file.md'].ownership).toBe('kit-managed');
   });
+
+  describe('git handling', () => {
+    it('--git-exclude writes to .git/info/exclude when in a git repo', async () => {
+      fs.mkdirSync(path.join(tmpDir, '.git', 'info'), { recursive: true });
+
+      const init = requireInit();
+      await init(['--git-exclude']);
+
+      const excludePath = path.join(tmpDir, '.git', 'info', 'exclude');
+      expect(fs.existsSync(excludePath)).toBe(true);
+      const content = fs.readFileSync(excludePath, 'utf8');
+      expect(content).toContain('# copilot-workflow-kit');
+      expect(content).toContain('.copilot-kit.lock');
+    });
+
+    it('--git-exclude skips and warns when not in a git repo', async () => {
+      const init = requireInit();
+      await init(['--git-exclude']);
+
+      const output = console.log.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('not a git repository');
+      expect(output).toContain('commit this file');
+    });
+
+    it('--gitignore appends to .gitignore', async () => {
+      const init = requireInit();
+      await init(['--gitignore']);
+
+      const gitignorePath = path.join(tmpDir, '.gitignore');
+      expect(fs.existsSync(gitignorePath)).toBe(true);
+      const content = fs.readFileSync(gitignorePath, 'utf8');
+      expect(content).toContain('# copilot-workflow-kit');
+      expect(content).toContain('.copilot-kit.lock');
+    });
+
+    it('--gitignore appends to existing .gitignore without duplicating', async () => {
+      const gitignorePath = path.join(tmpDir, '.gitignore');
+      fs.writeFileSync(gitignorePath, 'node_modules/\n', 'utf8');
+
+      const init = requireInit();
+      await init(['--gitignore']);
+
+      const content = fs.readFileSync(gitignorePath, 'utf8');
+      expect(content).toContain('node_modules/');
+      expect(content).toContain('# copilot-workflow-kit');
+
+      // Run again — should not duplicate the block
+      jest.resetModules();
+      jest.mock('../../src/utils', () => {
+        const actual = jest.requireActual('../../src/utils');
+        const mockPath = require('path');
+        return {
+          ...actual,
+          loadManifest: () => mockManifest,
+          getKitVersion: () => '2.0.0',
+          getTemplatePath: (rel) => mockPath.join(mockTemplateDir, rel),
+        };
+      });
+      const init2 = require('../../src/commands/init');
+      await init2(['--gitignore']);
+
+      const content2 = fs.readFileSync(gitignorePath, 'utf8');
+      expect(content2.split('# copilot-workflow-kit').length - 1).toBe(1);
+    });
+
+    it('--git-track shows commit lockfile message and writes no git files', async () => {
+      const init = requireInit();
+      await init(['--git-track']);
+
+      const output = console.log.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('commit this file');
+      expect(fs.existsSync(path.join(tmpDir, '.gitignore'))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, '.git'))).toBe(false);
+    });
+
+    it('no git flag and non-TTY defaults to git-track: writes no git files', async () => {
+      const init = requireInit();
+      await init([]);
+
+      const output = console.log.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('commit this file');
+      expect(fs.existsSync(path.join(tmpDir, '.gitignore'))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, '.git'))).toBe(false);
+    });
+  });
 });
