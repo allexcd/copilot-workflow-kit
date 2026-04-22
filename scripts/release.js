@@ -2,6 +2,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
@@ -56,6 +57,9 @@ async function main() {
 
   checkDependencies();
 
+  // Fetch tags so git describe sees the latest remote tags
+  run('git fetch --tags');
+
   const pkg = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8'));
 
   // Use latest git tag as base version to stay in sync with previous releases
@@ -107,8 +111,15 @@ async function main() {
   run(`git push -u origin ${branch}`);
   console.log(`  ✓  pushed branch: ${branch}`);
 
-  // Open PR
-  run(`gh pr create --title "chore: release ${tag}" --body "Bump version to \`${next}\`.\n\nOnce merged, CI will create the \`${tag}\` tag and trigger npm publish." --base main`);
+  // Open PR — write body to a temp file to avoid shell escaping issues
+  const prBody = `Bump version to ${next}.\n\nOnce merged, CI will create the ${tag} tag and trigger npm publish.`;
+  const prBodyPath = path.join(os.tmpdir(), `cwk-release-${next}.md`);
+  fs.writeFileSync(prBodyPath, prBody, 'utf8');
+  try {
+    run(`gh pr create --title "chore: release ${tag}" --body-file "${prBodyPath}" --base main`);
+  } finally {
+    fs.unlinkSync(prBodyPath);
+  }
   console.log(`  ✓  PR opened against main`);
 
   console.log('\n  Done. Merge the PR to trigger tagging and npm publish.\n');
