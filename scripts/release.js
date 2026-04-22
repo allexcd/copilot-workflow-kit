@@ -62,16 +62,19 @@ async function main() {
 
   const pkg = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8'));
 
-  // Use latest git tag as base version to stay in sync with previous releases
+  // Use latest git tag as base version to stay in sync with previous releases.
+  // git tag --sort=-v:refname finds the highest semver tag regardless of whether
+  // it is reachable from HEAD (unlike git describe which requires reachability).
   let current = pkg.version;
-  try {
-    const latestTag = run('git describe --tags --abbrev=0').replace(/^v/, '');
-    if (latestTag !== pkg.version) {
-      console.log(`\n  ⚠  package.json (${pkg.version}) is behind latest tag (v${latestTag}) — using tag as base`);
-      current = latestTag;
+  const latestTag = run('git tag --sort=-v:refname')
+    .split('\n')
+    .find((t) => /^v\d/.test(t));
+  if (latestTag) {
+    const latestVersion = latestTag.replace(/^v/, '');
+    if (latestVersion !== pkg.version) {
+      console.log(`\n  ⚠  package.json (${pkg.version}) is behind latest tag (${latestTag}) — using tag as base`);
     }
-  } catch {
-    // No tags yet, use package.json version
+    current = latestVersion;
   }
 
   console.log(`\n  Current version: ${current}`);
