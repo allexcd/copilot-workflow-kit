@@ -1,4 +1,4 @@
-name: Tag Release
+name: Tag and Publish
 
 on:
   push:
@@ -12,6 +12,9 @@ jobs:
   tag:
     name: tag
     runs-on: ubuntu-latest
+    outputs:
+      tag_created: ${{ steps.record.outputs.created }}
+      version: ${{ steps.version.outputs.value }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -46,3 +49,25 @@ jobs:
           gh release create "v${{ steps.version.outputs.value }}" \
             --title "v${{ steps.version.outputs.value }}" \
             --generate-notes
+
+      - name: Record tag created
+        id: record
+        if: steps.tag_check.outputs.exists == 'false'
+        run: echo "created=true" >> $GITHUB_OUTPUT
+
+  publish:
+    name: publish
+    needs: tag
+    if: needs.tag.outputs.tag_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
