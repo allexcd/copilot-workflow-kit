@@ -67,13 +67,16 @@ function writeLockfile(targetDir, lockData) {
 /**
  * Parse CLI flags.
  * @param {string[]} flags
- * @returns {{ force: boolean, dryRun: boolean, all: boolean }}
+ * @returns {{ force: boolean, dryRun: boolean, all: boolean, gitExclude: boolean, gitignore: boolean, gitTrack: boolean }}
  */
 function parseFlags(flags) {
   return {
     force: flags.includes('--force') || flags.includes('-f'),
     dryRun: flags.includes('--dry-run'),
     all: flags.includes('--all'),
+    gitExclude: flags.includes('--git-exclude'),
+    gitignore: flags.includes('--gitignore'),
+    gitTrack: flags.includes('--git-track'),
   };
 }
 

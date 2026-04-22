@@ -117,7 +117,7 @@ describe('status command', () => {
     expect(getOutput()).toContain('missing');
   });
 
-  it('shows user-owned file with correct status for existing and missing', async () => {
+  it('shows user-owned file as present with ● symbol', async () => {
     fs.mkdirSync(path.join(tmpDir, 'user'), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, 'user', 'file.md'), 'user content', 'utf8');
     seedLock({
@@ -129,5 +129,17 @@ describe('status command', () => {
 
     expect(getOutput()).toContain('●');
     expect(getOutput()).toContain('user-owned');
+  });
+
+  it('shows user-owned file as missing with ○ symbol when file does not exist', async () => {
+    seedLock({
+      'user/file.md': { ownership: 'user-owned', hash: hash('user content') },
+    });
+
+    const status = requireStatus();
+    await status([]);
+
+    expect(getOutput()).toContain('○');
+    expect(getOutput()).toContain('user/file.md');
   });
 });
