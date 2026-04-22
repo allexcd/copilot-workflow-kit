@@ -19,7 +19,25 @@ npx copilot-workflow-kit init
 
 This scaffolds all kit files into your project and creates a `.copilot-kit.lock` file to track versions.
 
-Commit the scaffolded files:
+### Git handling
+
+If you are in a git repository, the installer prompts you to choose how git should handle the installed files:
+
+```
+  [1] Exclude locally   — write to .git/info/exclude (your clone only)
+  [2] Add to .gitignore — shared with the team via .gitignore
+  [3] Track in git      — commit the files with the repo
+```
+
+You can skip the prompt by passing a flag directly:
+
+```bash
+npx copilot-workflow-kit init --git-exclude  # local-only exclusion via .git/info/exclude
+npx copilot-workflow-kit init --gitignore    # add to .gitignore (affects the whole team)
+npx copilot-workflow-kit init --git-track    # no git exclusion, commit files with the repo
+```
+
+If you chose `--git-track` (or ran in a non-interactive environment), commit the scaffolded files:
 
 ```bash
 git add .github/ AGENTS.md docs/ tasks/ .copilot-kit.lock
@@ -81,8 +99,14 @@ Empty directories left behind after file removal are cleaned up automatically. D
 
 | Command | Purpose |
 |---------|---------|
-| `cwk init` | Scaffold all kit files into the project |
+| `cwk init` | Scaffold all kit files — prompts for git handling if in a git repo |
+| `cwk init --git-exclude` | Scaffold and write installed paths to `.git/info/exclude` (local only) |
+| `cwk init --gitignore` | Scaffold and append installed paths to `.gitignore` |
+| `cwk init --git-track` | Scaffold only — no git exclusion, commit files with the repo |
+| `cwk init --force` | Re-scaffold all files, overwriting any existing ones |
 | `cwk update` | Update kit-managed files to the latest version |
+| `cwk update --dry-run` | Preview updates without writing any files |
+| `cwk update --force` | Force-update even locally modified kit-managed files |
 | `cwk status` | Show the state of each kit file (up-to-date, modified, outdated) |
 | `cwk diff` | Show differences between installed and latest kit files |
 | `cwk diff --all` | Include user-owned files in diff output (suggested changes) |
