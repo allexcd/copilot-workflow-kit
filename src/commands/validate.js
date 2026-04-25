@@ -152,6 +152,12 @@ function validateAgent(relativePath, templateRoot) {
 function validateMetadata(manifest, templateRoot) {
   const errors = [];
   for (const entry of manifest.files || []) {
+    if (!entry || typeof entry.path !== 'string') {
+      continue;
+    }
+    if (!fs.existsSync(path.join(templateRoot, entry.path))) {
+      continue;
+    }
     if (entry.path.endsWith('/SKILL.md') && entry.path.includes('.github/skills/')) {
       errors.push(...validateSkill(entry.path, templateRoot));
     }

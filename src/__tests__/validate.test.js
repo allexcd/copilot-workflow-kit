@@ -90,6 +90,22 @@ describe('validate command', () => {
     expect(getOutput()).toContain('missing from templates');
   });
 
+  it('reports missing skill templates without crashing metadata validation', async () => {
+    fs.rmSync(path.join(mockTemplateDir, '.github', 'skills', 'example-skill', 'SKILL.md'));
+    const validate = requireValidate();
+
+    await expect(validate([])).rejects.toThrow('validation error');
+    expect(getOutput()).toContain('missing from templates');
+  });
+
+  it('reports invalid manifest entries without crashing metadata validation', async () => {
+    mockManifest.files.push({ ownership: 'kit-managed' });
+    const validate = requireValidate();
+
+    await expect(validate([])).rejects.toThrow('validation error');
+    expect(getOutput()).toContain('non-empty path');
+  });
+
   it('fails when a template is missing from the manifest', async () => {
     writeTemplate('extra.md', 'extra\n');
     const validate = requireValidate();
