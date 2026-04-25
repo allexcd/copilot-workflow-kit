@@ -1,4 +1,5 @@
 ---
+name: verification
 description: >
   Verification-before-done discipline. Ensures no task is marked complete without
   concrete proof of correctness — tests, logs, diffs, or behavioral checks.

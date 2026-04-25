@@ -1,4 +1,5 @@
 ---
+name: subagent-strategy
 description: >
   Subagent delegation strategy. Use when tasks involve research, exploration,
   or parallel analysis that would clutter the main context window.

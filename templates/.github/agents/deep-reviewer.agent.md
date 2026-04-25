@@ -1,12 +1,10 @@
 ---
+name: Deep Reviewer
 description: Architecture and quality reviewer. Challenges elegance, validates edge cases, and requires proof before approving.
 tools:
-  - semantic_search
-  - grep_search
-  - read_file
-  - file_search
-  - list_dir
-  - get_errors
+  - read
+  - search
+  - execute
 ---
 
 # Deep Reviewer

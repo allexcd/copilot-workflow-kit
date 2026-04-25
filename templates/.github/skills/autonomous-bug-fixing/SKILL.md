@@ -1,4 +1,5 @@
 ---
+name: autonomous-bug-fixing
 description: >
   Autonomous bug fixing workflow. Use when given a bug report, failing test, or
   error log. Diagnose and fix without asking for hand-holding — zero context

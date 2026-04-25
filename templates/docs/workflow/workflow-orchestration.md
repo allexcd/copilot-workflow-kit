@@ -1,50 +1,42 @@
 ## Workflow Orchestration
 
+Use this workflow in Copilot Chat, Copilot CLI, custom agents, and Copilot coding agent sessions.
+
 ### 1. Plan Mode Default
-- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan immediately — don't keep pushing
-- Use plan mode for verification steps, not just building
-- Write detailed specs upfront to reduce ambiguity
+- Enter plan mode for any non-trivial task (3+ steps, architectural decisions, migrations, or meaningful risk).
+- Ground the plan in the repo first: read files, inspect tests, and identify existing conventions before asking questions.
+- Include the verification approach in the plan, not after implementation.
+- If execution drifts or new facts invalidate the plan, stop and re-plan before continuing.
 
-### 2. Subagent Strategy
-- Use subagents liberally to keep main context window clean
-- Offload research, exploration, and parallel analysis to subagents
-- For complex problems, throw more compute at it via subagents
-- One task per subagent for focused execution
+### 2. Agent Strategy
+- Use custom agents for focused work: `fast-implementer` for approved plans, `deep-reviewer` for design and edge-case review.
+- Use Copilot coding agent for isolated branches, background tasks, and PR-sized work.
+- Use Copilot cloud planning or deep research for broad investigation before implementation.
+- Keep each delegated task self-contained with clear inputs, expected output, and files or areas of ownership.
 
-### 3. Self-Improvement Loop
-- After ANY correction from the user: update `tasks/lessons.md` with the pattern
-- Write rules for yourself that prevent the same mistake
-- Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
+### 3. Skills and Context
+- Use skills when the task matches their `name` and `description` metadata.
+- Keep repository instructions concise; put workflow depth in skills and docs.
+- Use `tasks/todo.md` for active plans and `tasks/lessons.md` for durable correction patterns.
+- Prefer installed skill management such as `gh skill` when available, and keep copied skills versioned through this kit.
 
 ### 4. Verification Before Done
-- Never mark a task complete without proving it works
-- Diff behavior between main and your changes when relevant
-- Ask yourself: "Would a staff engineer approve this?"
-- Run tests, check logs, demonstrate correctness
+- Never mark a task complete without proof: tests, lint/build output, logs, screenshots, or behavioral checks.
+- Diff behavior against the base branch when changes are risky or user-facing.
+- For cloud-agent or branch work, record the verification evidence in the PR or final response.
+- If proof cannot be produced, clearly state what was not verified and why.
 
-### 5. Demand Elegance (Balanced)
-- For non-trivial changes: pause and ask "is there a more elegant way?"
-- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes — don't over-engineer
-- Challenge your own work before presenting it
+### 5. Demand Elegance
+- For non-trivial changes, pause and ask whether the implementation can be simpler.
+- If the fix is a band-aid, replace it with the minimal root-cause solution.
+- Do not over-engineer simple fixes; elegance means low complexity and low blast radius.
 
 ### 6. Autonomous Bug Fixing
-- When given a bug report: just fix it. Don't ask for hand-holding
-- Point at logs, errors, failing tests — then resolve them
-- Zero context switching required from the user
-- Go fix failing CI tests without being told how
+- When given a bug report, failing CI run, or error log, diagnose, fix, and prove the fix without asking for step-by-step help.
+- Trace root cause before editing.
+- Keep changes narrow unless the root cause is shared.
 
-## Task Management
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
-2. **Verify Plan**: Check in before starting implementation
-3. **Track Progress**: Mark items complete as you go
-4. **Explain Changes**: High-level summary at each step
-5. **Document Results**: Add review section to `tasks/todo.md`
-6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
-
-## Core Principles
-- **Simplicity First**: Make every change as simple as possible. Impact minimal code.
-- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
-- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+## Optional Copilot Hooks and Setup
+- Add hooks only for small guardrails such as formatting, validation, or preventing unsafe commands; avoid broad hooks that surprise contributors.
+- For Copilot coding agent environments that need dependencies, add `.github/workflows/copilot-setup-steps.yml` in the target repo.
+- Keep setup steps deterministic, fast, and limited to what the agent needs to run tests or inspect the project.
