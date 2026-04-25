@@ -105,7 +105,7 @@ async function init(flags) {
       skipped++;
       lockFiles[entry.path] = {
         ownership: entry.ownership,
-        hash: hashFile(targetPath),
+        hash: entry.ownership === 'kit-managed' ? hashFile(templatePath) : hashFile(targetPath),
       };
       continue;
     }
