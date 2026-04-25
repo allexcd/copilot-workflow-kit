@@ -11,6 +11,7 @@ const COMMANDS = {
   status: '../src/commands/status.js',
   diff: '../src/commands/diff.js',
   uninstall: '../src/commands/uninstall.js',
+  validate: '../src/commands/validate.js',
 };
 
 function printHelp() {
@@ -27,6 +28,7 @@ function printHelp() {
     status         Show the state of each kit file
     diff           Show differences between installed and latest kit files
     uninstall      Remove kit-installed files and the lockfile
+    validate       Validate bundled kit metadata and installed lockfile shape
 
   Options:
     --force        Overwrite files even if locally modified (init, update)
