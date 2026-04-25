@@ -31,7 +31,7 @@ function printHelp() {
     validate       Validate bundled kit metadata and installed lockfile shape
 
   Options:
-    --force        Overwrite files even if locally modified (init, update)
+    --force        Overwrite/remove files even if locally modified (init, update, uninstall)
     --dry-run      Show what would change without writing (update, uninstall)
     --all          Include user-owned files in diff output (diff) / remove user-owned files (uninstall)
     --help, -h     Show this help message
@@ -42,6 +42,7 @@ function printHelp() {
     npx copilot-workflow-kit update --dry-run
     npx copilot-workflow-kit status
     npx copilot-workflow-kit diff --all
+    npx copilot-workflow-kit validate
     npx copilot-workflow-kit uninstall
     npx copilot-workflow-kit uninstall --all --dry-run
 `);

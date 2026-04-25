@@ -7,7 +7,7 @@
 [![Node.js >=20](https://img.shields.io/node/v/copilot-workflow-kit)](https://www.npmjs.com/package/copilot-workflow-kit)
 [![GitHub stars](https://img.shields.io/github/stars/allexcd/copilot-workflow-kit?style=social)](https://github.com/allexcd/copilot-workflow-kit)
 
-A workflow orchestration kit for GitHub Copilot in VS Code. Structured rules, agents, skills, and prompts that make Copilot plan before building, verify before closing, and self-improve after corrections.
+A workflow orchestration kit for GitHub Copilot across VS Code, Copilot Chat, Copilot CLI, custom agents, and Copilot coding agent sessions. Structured rules, agents, skills, and prompts make Copilot plan before building, verify before closing, and self-improve after corrections.
 
 ## Install
 
@@ -17,7 +17,7 @@ Run this inside your project directory:
 npx copilot-workflow-kit init
 ```
 
-This scaffolds all kit files into your project and creates a `.copilot-kit.lock` file to track versions.
+This scaffolds all kit files into your project and creates a `.copilot-kit.lock` file to track versions. Run `cwk validate` any time you want to check the bundled metadata and installed lockfile shape.
 
 ### Git handling
 
@@ -36,6 +36,8 @@ npx copilot-workflow-kit init --git-exclude  # local-only exclusion via .git/inf
 npx copilot-workflow-kit init --gitignore    # add to .gitignore (affects the whole team)
 npx copilot-workflow-kit init --git-track    # no git exclusion, commit files with the repo
 ```
+
+Git exclusions are written as exact installed file paths. Existing files such as `.github/workflows/ci.yml` stay visible to git.
 
 If you chose `--git-track` (or ran in a non-interactive environment), commit the scaffolded files:
 
@@ -78,7 +80,7 @@ To remove all kit-installed files from your project:
 npx copilot-workflow-kit uninstall
 ```
 
-By default this removes only **kit-managed** files (skills, agents, prompts, workflow docs) and the `.copilot-kit.lock` lockfile. **User-owned** files are left untouched.
+By default this removes only **kit-managed** files (skills, agents, prompts, workflow docs) and the `.copilot-kit.lock` lockfile. **User-owned** files are left untouched. Locally modified kit-managed files are also kept by default; use `--force` only when you want to remove them too.
 
 To remove everything — including user-owned files like `AGENTS.md`, `tasks/*`, and `copilot-instructions.md`:
 
@@ -93,7 +95,23 @@ npx copilot-workflow-kit uninstall --dry-run
 npx copilot-workflow-kit uninstall --all --dry-run
 ```
 
+Force-remove locally modified kit-managed files:
+
+```bash
+npx copilot-workflow-kit uninstall --force
+```
+
 Empty directories left behind after file removal are cleaned up automatically. Directories that still contain other (non-kit) files are preserved.
+
+## Validate
+
+Check the kit manifest, bundled templates, required skill and agent metadata, and any installed lockfile:
+
+```bash
+npx copilot-workflow-kit validate
+```
+
+This is useful before publishing the package or after manually editing bundled templates.
 
 ## CLI Commands
 
@@ -110,9 +128,11 @@ Empty directories left behind after file removal are cleaned up automatically. D
 | `cwk status` | Show the state of each kit file (up-to-date, modified, outdated) |
 | `cwk diff` | Show differences between installed and latest kit files |
 | `cwk diff --all` | Include user-owned files in diff output (suggested changes) |
+| `cwk validate` | Validate manifest/template parity, metadata, and lockfile shape |
 | `cwk uninstall` | Remove kit-managed files and the lockfile |
 | `cwk uninstall --all` | Also remove user-owned files (full cleanup) |
 | `cwk uninstall --dry-run` | Preview what would be removed without deleting |
+| `cwk uninstall --force` | Remove locally modified kit-managed files too |
 
 `cwk` is an alias for `copilot-workflow-kit`.
 
@@ -132,28 +152,39 @@ Empty directories left behind after file removal are cleaned up automatically. D
 
 This way your customizations live alongside the kit without conflicts.
 
-## What's Included
+## File Map
 
-| Category | Files | Ownership |
+| Files | Purpose | Ownership |
 |---|---|---|
-| Workflow rules | `docs/workflow/workflow-orchestration.md` | Kit-managed |
-| Instructions | `.github/copilot-instructions.md`, `.github/instructions/backend.instructions.md` | User-owned |
-| Agents | `.github/agents/deep-reviewer.agent.md`, `.github/agents/fast-implementer.agent.md` | Kit-managed |
-| Prompts | `.github/prompts/kickoff.prompt.md`, `.github/prompts/verify-and-close.prompt.md`, `.github/prompts/elegant-fix.prompt.md` | Kit-managed |
-| Skills | `.github/skills/{autonomous-bug-fixing,demand-elegance,plan-mode,self-improvement,subagent-strategy,verification}/SKILL.md` | Kit-managed |
-| Task tracking | `tasks/todo.md`, `tasks/lessons.md` | User-owned |
-| Root config | `AGENTS.md` | User-owned |
-| CI | `.github/workflows/update-copilot-kit.yml` | User-owned |
+| `.github/copilot-instructions.md` | Repository-wide Copilot behavior | User-owned |
+| `.github/instructions/backend.instructions.md` | Language/framework code rules | User-owned |
+| `AGENTS.md` | Default instructions for agents | User-owned |
+| `.github/agents/*.agent.md` | Custom Copilot agents for implementation and review | Kit-managed |
+| `.github/skills/*/SKILL.md` | Reusable workflows with required skill metadata | Kit-managed |
+| `.github/prompts/*.prompt.md` | Task kickoff, verification, and elegance prompts | Kit-managed |
+| `docs/workflow/workflow-orchestration.md` | Full workflow rules for Chat, CLI, and cloud agent sessions | Kit-managed |
+| `tasks/todo.md` | Active plan and verification checklist | User-owned |
+| `tasks/lessons.md` | Correction patterns and prevention rules | User-owned |
+| `.github/workflows/update-copilot-kit.yml` | Weekly automated kit update PR | User-owned |
+| `.copilot-kit.lock` | Installed file hashes and ownership | Generated |
 
 ## Compatibility
 
-Uses repository files that Copilot auto-loads:
+Uses repository files that Copilot can auto-load:
 - `.github/copilot-instructions.md`
 - `.github/instructions/*.instructions.md`
 - `.github/prompts/*.prompt.md`
 - `AGENTS.md`
 
+Also includes:
+- `.github/agents/*.agent.md` custom-agent definitions with `name`, `description`, and tool aliases.
+- `.github/skills/*/SKILL.md` Agent Skill definitions with `name` and `description` frontmatter.
+- Optional guidance for Copilot coding agent setup via `.github/workflows/copilot-setup-steps.yml`; add this file in your project only when the cloud agent needs custom dependencies or setup steps.
+- Optional hook guidance in `docs/workflow/workflow-orchestration.md`; hooks are not scaffolded by default because they should be small, explicit guardrails.
+
 ## Complementary Tools
+
+**GitHub CLI Agent Skills** — Newer GitHub CLI versions include `gh skill` for managing Copilot Agent Skills. Use `gh skill --help` when your installed `gh` supports it. The command is not available in GitHub CLI `2.89.0`; install a newer release before relying on it in setup docs or automation.
 
 **[caveman](https://github.com/JuliusBrussee/caveman)** — Reduces LLM output tokens by ~65% via terse responses. Orthogonal to this kit.
 
