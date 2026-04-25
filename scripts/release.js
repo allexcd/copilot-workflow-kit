@@ -91,7 +91,7 @@ async function main() {
 
   const next = bumpVersion(current, input);
   const tag = `v${next}`;
-  const branch = `release/${tag}`;
+  const branch = `chore/release-v${next.replace(/\./g, '-')}`;
 
   console.log(`\n  ${current} → ${next} (${tag})`);
   console.log(`  Branch: ${branch}\n`);
