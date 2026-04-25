@@ -79,6 +79,32 @@ describe('uninstall command', () => {
     expect(output).toContain('user-owned');
   });
 
+  it('keeps locally modified kit-managed files and lockfile by default', async () => {
+    seedProject();
+    fs.writeFileSync(path.join(tmpDir, 'managed', 'file.md'), 'modified managed content', 'utf8');
+
+    const uninstall = requireUninstall();
+    await uninstall([]);
+
+    expect(fs.existsSync(path.join(tmpDir, 'managed', 'file.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, LOCKFILE_NAME))).toBe(true);
+
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('locally modified');
+    expect(output).toContain('--force');
+  });
+
+  it('removes locally modified kit-managed files with --force', async () => {
+    seedProject();
+    fs.writeFileSync(path.join(tmpDir, 'managed', 'file.md'), 'modified managed content', 'utf8');
+
+    const uninstall = requireUninstall();
+    await uninstall(['--force']);
+
+    expect(fs.existsSync(path.join(tmpDir, 'managed', 'file.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, LOCKFILE_NAME))).toBe(false);
+  });
+
   it('removes user-owned files when --all is passed', async () => {
     seedProject();
 

@@ -3,6 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { LOCKFILE_NAME } = require('../../src/utils');
 
 let tmpDir;
@@ -97,18 +98,24 @@ describe('init command', () => {
   it('skips existing files without --force but still tracks them in lockfile', async () => {
     // Pre-create one file with different content
     fs.mkdirSync(path.join(tmpDir, 'managed'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, 'managed', 'file.md'), 'my custom content', 'utf8');
+    const targetPath = path.join(tmpDir, 'managed', 'file.md');
+    fs.writeFileSync(targetPath, 'my custom content', 'utf8');
 
     const init = requireInit();
     await init([]);
 
     // File should keep custom content (not overwritten)
-    expect(fs.readFileSync(path.join(tmpDir, 'managed', 'file.md'), 'utf8')).toBe('my custom content');
+    expect(fs.readFileSync(targetPath, 'utf8')).toBe('my custom content');
 
-    // But it should still be tracked in lockfile
+    // But kit-managed skipped files should track the template baseline, so
+    // future updates preserve the existing file as locally modified.
     const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    const { hashFile } = jest.requireActual('../../src/utils');
+    const templatePath = path.join(mockTemplateDir, 'managed', 'file.md');
     expect(lock.files['managed/file.md']).toBeDefined();
     expect(lock.files['managed/file.md'].ownership).toBe('kit-managed');
+    expect(lock.files['managed/file.md'].hash).toBe(hashFile(templatePath));
+    expect(lock.files['managed/file.md'].hash).not.toBe(hashFile(targetPath));
   });
 
   describe('git handling', () => {
@@ -142,7 +149,23 @@ describe('init command', () => {
       expect(fs.existsSync(gitignorePath)).toBe(true);
       const content = fs.readFileSync(gitignorePath, 'utf8');
       expect(content).toContain('# copilot-workflow-kit');
+      expect(content).toContain('managed/file.md');
+      expect(content).toContain('user/file.md');
       expect(content).toContain('.copilot-kit.lock');
+      const lines = content.split('\n');
+      expect(lines).not.toContain('managed/');
+      expect(lines).not.toContain('user/');
+    });
+
+    it('--gitignore does not hide unrelated sibling files', async () => {
+      execFileSync('git', ['init'], { cwd: tmpDir, stdio: 'ignore' });
+      const init = requireInit();
+      await init(['--gitignore']);
+
+      fs.writeFileSync(path.join(tmpDir, 'managed', 'other.md'), 'unrelated', 'utf8');
+
+      expect(() => execFileSync('git', ['check-ignore', 'managed/file.md'], { cwd: tmpDir })).not.toThrow();
+      expect(() => execFileSync('git', ['check-ignore', 'managed/other.md'], { cwd: tmpDir })).toThrow();
     });
 
     it('--gitignore appends to existing .gitignore without duplicating', async () => {

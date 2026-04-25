@@ -1,4 +1,5 @@
 ---
+name: self-improvement
 description: >
   Self-improvement loop triggered after any user correction. Captures mistakes
   as prevention rules in tasks/lessons.md so the same error is never repeated.

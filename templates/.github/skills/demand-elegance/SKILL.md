@@ -1,4 +1,5 @@
 ---
+name: demand-elegance
 description: >
   Demand elegance for non-trivial changes. Use when a fix or implementation feels
   hacky or when reviewing your own work before presenting it. Balances elegance

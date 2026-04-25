@@ -1,14 +1,20 @@
 # AGENTS.md
 
-Default instructions for all Copilot agents operating in this repository.
+Default instructions for Copilot agents operating in this repository.
 
 ## Mandatory Behaviors
-- **Plan first** for non-trivial tasks (3+ steps). Write plan to `tasks/todo.md`.
-- **Verify before done** with concrete proof — tests, logs, diffs, or behavioral checks.
-- **Self-improve** after any correction — update `tasks/lessons.md` with a prevention rule.
-- **Fix bugs autonomously** — diagnose, fix, prove. Don't ask for hand-holding.
+- Plan first for non-trivial tasks (3+ steps, architectural decisions, migrations, or meaningful risk).
+- Read relevant files before making implementation decisions.
+- Verify before done with concrete proof: tests, logs, diffs, screenshots, or behavioral checks.
+- Capture corrections in `tasks/lessons.md` with a prevention rule.
+- Fix bugs autonomously: diagnose, implement, and prove the root-cause fix.
+
+## Agent Usage
+- Use `fast-implementer` to execute approved plans with a minimal diff.
+- Use `deep-reviewer` to challenge architecture, edge cases, and verification quality.
+- For cloud-agent tasks, keep branches focused and include verification evidence in PR notes.
 
 ## Core Principles
-- **Simplicity First**: Every change as simple as possible. Minimal code impact.
-- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
-- **Minimal Impact**: Only touch what's necessary. Avoid introducing bugs.
+- Simplicity first: minimal code impact and low blast radius.
+- Root cause over symptoms: no temporary fixes unless explicitly requested.
+- Respect existing conventions before adding new abstractions.

@@ -1,5 +1,11 @@
 ---
+name: Fast Implementer
 description: Execute an approved plan quickly with minimal diff. Root-cause fixes only, with verification proof before done.
+tools:
+  - read
+  - search
+  - edit
+  - execute
 ---
 
 # Fast Implementer

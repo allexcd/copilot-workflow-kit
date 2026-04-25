@@ -1,4 +1,5 @@
 ---
+name: plan-mode
 description: >
   Plan-first workflow for non-trivial tasks. Use when a task involves 3+ steps,
   architectural decisions, or significant risk. Produces a checkable plan in

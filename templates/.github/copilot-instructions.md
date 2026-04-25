@@ -1,28 +1,29 @@
-# Repository-wide Copilot Instructions
+# Repository-Wide Copilot Instructions
 
-## Workflow
-Follow the workflow orchestration defined in `docs/workflow/workflow-orchestration.md`.
+Follow `docs/workflow/workflow-orchestration.md` in Copilot Chat, Copilot CLI, custom agents, and Copilot coding agent sessions.
 
-### Mandatory Behaviors
-- **Plan first** for non-trivial tasks (3+ steps or architectural decisions). Write plan to `tasks/todo.md`.
-- **Verify before done** with concrete proof — tests, logs, diffs, or behavioral checks.
-- **Demand elegance** for non-trivial changes. Skip for simple, obvious fixes.
-- **Self-improve** after any correction — update `tasks/lessons.md` with a prevention rule.
-- **Use subagents** to keep the main context clean. One task per subagent.
-- **Fix bugs autonomously** — don't ask for hand-holding. Diagnose, fix, prove.
+## Mandatory Behaviors
+- Plan first for non-trivial tasks (3+ steps, architectural decisions, migrations, or meaningful risk).
+- Ground plans in repository facts before asking questions.
+- Verify before done with concrete proof: tests, logs, diffs, screenshots, or behavioral checks.
+- Demand elegance for non-trivial changes; keep simple fixes simple.
+- Capture corrections in `tasks/lessons.md` with a prevention rule.
+- Use skills and agents when their metadata matches the task.
+- Fix bugs autonomously: diagnose, implement, and prove the root-cause fix.
 
-### Task Tracking
-- Track progress in `tasks/todo.md` with checkable items.
-- After any correction, update `tasks/lessons.md`.
-- Review `tasks/lessons.md` at session start.
+## Task Tracking
+- Track active plans and progress in `tasks/todo.md`.
+- Review `tasks/lessons.md` before starting related work.
+- For Copilot coding agent branches or PRs, include verification evidence in the final summary or PR notes.
 
-### Output Contract (non-trivial tasks)
+## Output Contract
+For non-trivial tasks, return:
 1. Plan
 2. Implementation summary
 3. Verification evidence
-4. Risks/follow-ups
+4. Risks or follow-ups
 
-### Core Principles
-- **Simplicity First**: Make every change as simple as possible. Minimal code impact.
-- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
-- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+## Core Principles
+- Simplicity first: minimal code impact and low blast radius.
+- Root cause over symptoms: no temporary fixes unless explicitly requested.
+- Respect existing conventions before adding new abstractions.
