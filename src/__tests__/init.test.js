@@ -3,6 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { LOCKFILE_NAME } = require('../../src/utils');
 
 let tmpDir;
@@ -142,7 +143,23 @@ describe('init command', () => {
       expect(fs.existsSync(gitignorePath)).toBe(true);
       const content = fs.readFileSync(gitignorePath, 'utf8');
       expect(content).toContain('# copilot-workflow-kit');
+      expect(content).toContain('managed/file.md');
+      expect(content).toContain('user/file.md');
       expect(content).toContain('.copilot-kit.lock');
+      const lines = content.split('\n');
+      expect(lines).not.toContain('managed/');
+      expect(lines).not.toContain('user/');
+    });
+
+    it('--gitignore does not hide unrelated sibling files', async () => {
+      execFileSync('git', ['init'], { cwd: tmpDir, stdio: 'ignore' });
+      const init = requireInit();
+      await init(['--gitignore']);
+
+      fs.writeFileSync(path.join(tmpDir, 'managed', 'other.md'), 'unrelated', 'utf8');
+
+      expect(() => execFileSync('git', ['check-ignore', 'managed/file.md'], { cwd: tmpDir })).not.toThrow();
+      expect(() => execFileSync('git', ['check-ignore', 'managed/other.md'], { cwd: tmpDir })).toThrow();
     });
 
     it('--gitignore appends to existing .gitignore without duplicating', async () => {

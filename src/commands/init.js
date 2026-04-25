@@ -20,12 +20,7 @@ function isGitRepo(targetDir) {
 function deriveGitEntries(manifest) {
   const entries = new Set();
   for (const file of manifest.files) {
-    const firstSegment = file.path.split('/')[0];
-    if (file.path.includes('/')) {
-      entries.add(firstSegment + '/');
-    } else {
-      entries.add(file.path);
-    }
+    entries.add(file.path);
   }
   entries.add('.copilot-kit.lock');
   return Array.from(entries);
