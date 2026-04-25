@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const {
+  hashFile,
   readLockfile,
   parseFlags,
 } = require('../utils');
@@ -16,7 +17,7 @@ const {
  * @param {string[]} flags
  */
 async function uninstall(flags) {
-  const { dryRun, all } = parseFlags(flags);
+  const { dryRun, all, force } = parseFlags(flags);
   const targetDir = process.cwd();
   const lock = readLockfile(targetDir);
 
@@ -33,6 +34,7 @@ async function uninstall(flags) {
   const entries = Object.entries(lock.files);
   let removed = 0;
   let skipped = 0;
+  let modifiedSkipped = 0;
   const removedDirs = new Set();
 
   for (const [filePath, meta] of entries) {
@@ -48,6 +50,14 @@ async function uninstall(flags) {
     if (!fs.existsSync(absPath)) {
       console.log(`  skip  ${filePath}  (not found)`);
       skipped++;
+      continue;
+    }
+
+    if (ownership === 'kit-managed' && meta.hash && hashFile(absPath) !== meta.hash && !force) {
+      const verb = dryRun ? 'would skip' : 'skip';
+      console.log(`  ${verb}  ${filePath}  (locally modified, use --force to remove)`);
+      skipped++;
+      modifiedSkipped++;
       continue;
     }
 
@@ -84,7 +94,10 @@ async function uninstall(flags) {
 
   // Remove the lockfile
   const lockPath = path.join(targetDir, '.copilot-kit.lock');
-  if (!dryRun) {
+  if (modifiedSkipped > 0) {
+    const verb = dryRun ? 'would keep' : 'keep';
+    console.log(`  ${verb}  .copilot-kit.lock  (modified kit-managed files remain)`);
+  } else if (!dryRun) {
     fs.rmSync(lockPath);
     console.log(`  ✓  removed  .copilot-kit.lock`);
   } else {
@@ -97,7 +110,9 @@ async function uninstall(flags) {
   } else {
     console.log(`  Done: ${removed} file(s) removed, ${skipped} skipped`);
   }
-  if (skipped > 0 && !all) {
+  if (modifiedSkipped > 0) {
+    console.log('  Run with --force to also remove locally modified kit-managed files');
+  } else if (skipped > 0 && !all) {
     console.log('  Run with --all to also remove user-owned files');
   }
   console.log('');
