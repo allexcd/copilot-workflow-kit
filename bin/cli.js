@@ -34,6 +34,9 @@ function printHelp() {
     --force        Overwrite/remove files even if locally modified (init, update, uninstall)
     --dry-run      Show what would change without writing (update, uninstall)
     --all          Include user-owned files in diff output (diff) / remove user-owned files (uninstall)
+    --git-exclude  Write installed paths to .git/info/exclude (init, update)
+    --gitignore    Write installed paths to .gitignore (init, update)
+    --git-track    Do not write git ignore/exclude files (init, update)
     --help, -h     Show this help message
     --version, -v  Show version
 

@@ -15,6 +15,7 @@ describe('npm package contents', () => {
     const files = pack.files.map((file) => file.path);
 
     expect(files).toContain('bin/cli.js');
+    expect(files).toContain('src/git-mode.js');
     expect(files).toContain('src/utils.js');
     expect(files).toContain('src/commands/init.js');
     expect(files).toContain('src/commands/validate.js');

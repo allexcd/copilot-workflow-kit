@@ -46,7 +46,7 @@ function hashFile(filePath) {
 /**
  * Read the lockfile from the target directory.
  * @param {string} targetDir
- * @returns {{ version: string, files: Record<string, { ownership: string, hash: string }> } | null}
+ * @returns {{ version: string, gitMode?: string, files: Record<string, { ownership: string, hash: string }> } | null}
  */
 function readLockfile(targetDir) {
   const lockPath = path.join(targetDir, LOCKFILE_NAME);
@@ -57,7 +57,7 @@ function readLockfile(targetDir) {
 /**
  * Write the lockfile to the target directory.
  * @param {string} targetDir
- * @param {{ version: string, files: Record<string, { ownership: string, hash: string }> }} lockData
+ * @param {{ version: string, gitMode?: string, files: Record<string, { ownership: string, hash: string }> }} lockData
  */
 function writeLockfile(targetDir, lockData) {
   const lockPath = path.join(targetDir, LOCKFILE_NAME);

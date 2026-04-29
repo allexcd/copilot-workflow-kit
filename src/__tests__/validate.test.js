@@ -130,6 +130,7 @@ description: Example skill used by tests.
   it('fails when an installed lockfile has invalid shape', async () => {
     fs.writeFileSync(path.join(tmpDir, LOCKFILE_NAME), JSON.stringify({
       version: '',
+      gitMode: 'surprise-me',
       files: {
         'unknown.md': { ownership: 'kit-managed', hash: '' },
       },
@@ -138,6 +139,7 @@ description: Example skill used by tests.
 
     await expect(validate([])).rejects.toThrow('validation error');
     expect(getOutput()).toContain('version string');
+    expect(getOutput()).toContain('invalid gitMode');
     expect(getOutput()).toContain('unknown file');
     expect(getOutput()).toContain('invalid lockfile hash');
   });

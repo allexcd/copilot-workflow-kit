@@ -38,6 +38,7 @@ npx copilot-workflow-kit init --git-track    # no git exclusion, commit files wi
 ```
 
 Git exclusions are written as exact installed file paths. Existing files such as `.github/workflows/ci.yml` stay visible to git.
+The selected git handling mode is saved in `.copilot-kit.lock` so future updates can apply the same choice to newly added kit files.
 
 If you chose `--git-track` (or ran in a non-interactive environment), commit the scaffolded files:
 
@@ -62,6 +63,9 @@ The update command uses a **file ownership model** to preserve your customizatio
 | **User-owned** | Never overwritten by update | `copilot-instructions.md`, `AGENTS.md`, `backend.instructions.md`, `tasks/*` |
 
 Kit-managed files that you modified locally are skipped with a warning. Use `--force` to overwrite them.
+When a new kit version adds files, `update` installs missing kit-managed files and scaffolds missing user-owned files once. If the path already exists in your project, it is kept unless you pass `--force`.
+
+`update` reuses the git handling mode saved by `init` and refreshes the kit block in `.gitignore` or `.git/info/exclude` when needed. Older lockfiles that do not have a saved git mode prompt once in an interactive terminal; non-interactive runs still update files, but skip git ignore/exclude changes and print a warning.
 
 ```bash
 npx copilot-workflow-kit@latest update --dry-run  # Preview changes without writing
@@ -102,6 +106,7 @@ npx copilot-workflow-kit uninstall --force
 ```
 
 Empty directories left behind after file removal are cleaned up automatically. Directories that still contain other (non-kit) files are preserved.
+Uninstall also removes Copilot Workflow Kit blocks from `.gitignore` and `.git/info/exclude`. During `--all`, locally modified user-owned files require confirmation before deletion; non-interactive runs keep them unless `--force` is passed.
 
 ## Validate
 
@@ -125,6 +130,9 @@ This is useful before publishing the package or after manually editing bundled t
 | `cwk update` | Update kit-managed files to the latest version |
 | `cwk update --dry-run` | Preview updates without writing any files |
 | `cwk update --force` | Force-update even locally modified kit-managed files |
+| `cwk update --git-exclude` | Update and write installed paths to `.git/info/exclude` |
+| `cwk update --gitignore` | Update and write installed paths to `.gitignore` |
+| `cwk update --git-track` | Update without writing git ignore/exclude files |
 | `cwk status` | Show the state of each kit file (up-to-date, modified, outdated) |
 | `cwk diff` | Show differences between installed and latest kit files |
 | `cwk diff --all` | Include user-owned files in diff output (suggested changes) |

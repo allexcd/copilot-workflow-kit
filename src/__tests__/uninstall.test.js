@@ -5,9 +5,11 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { LOCKFILE_NAME } = require('../../src/utils');
+const { KIT_BLOCK_BEGIN, KIT_BLOCK_END } = require('../../src/git-mode');
 
 let tmpDir;
 const originalCwd = process.cwd;
+const originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
 
 function hash(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
@@ -44,6 +46,11 @@ beforeEach(() => {
 afterEach(() => {
   process.cwd = originalCwd;
   console.log.mockRestore();
+  if (originalStdinIsTTY) {
+    Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTY);
+  } else {
+    delete process.stdin.isTTY;
+  }
   jest.restoreAllMocks();
   jest.resetModules();
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -189,5 +196,73 @@ describe('uninstall command', () => {
     // Only the tmp root dir should remain, with no children
     const remaining = fs.readdirSync(tmpDir);
     expect(remaining).toEqual([]);
+  });
+
+  it('cleans kit blocks from .gitignore and .git/info/exclude', async () => {
+    seedProject();
+    fs.mkdirSync(path.join(tmpDir, '.git', 'info'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.gitignore'), [
+      'node_modules/',
+      KIT_BLOCK_BEGIN,
+      'managed/file.md',
+      'user/file.md',
+      '.copilot-kit.lock',
+      KIT_BLOCK_END,
+      'dist/',
+      '',
+    ].join('\n'), 'utf8');
+    fs.writeFileSync(path.join(tmpDir, '.git', 'info', 'exclude'), [
+      '# local excludes',
+      '# copilot-workflow-kit',
+      'managed/file.md',
+      'user/file.md',
+      '.copilot-kit.lock',
+      '',
+    ].join('\n'), 'utf8');
+
+    const uninstall = requireUninstall();
+    await uninstall([]);
+
+    const gitignore = fs.readFileSync(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('node_modules/');
+    expect(gitignore).toContain('dist/');
+    expect(gitignore).not.toContain('managed/file.md');
+    expect(gitignore).not.toContain(KIT_BLOCK_BEGIN);
+
+    const exclude = fs.readFileSync(path.join(tmpDir, '.git', 'info', 'exclude'), 'utf8');
+    expect(exclude).toContain('# local excludes');
+    expect(exclude).not.toContain('managed/file.md');
+    expect(exclude).not.toContain('# copilot-workflow-kit');
+  });
+
+  it('keeps modified user-owned files during non-interactive --all uninstall', async () => {
+    seedProject();
+    fs.writeFileSync(path.join(tmpDir, 'user', 'file.md'), 'modified user content', 'utf8');
+
+    const uninstall = requireUninstall();
+    await uninstall(['--all']);
+
+    expect(fs.existsSync(path.join(tmpDir, 'user', 'file.md'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, LOCKFILE_NAME))).toBe(true);
+    const output = console.log.mock.calls.map(c => c[0]).join('\n');
+    expect(output).toContain('confirmation required');
+  });
+
+  it('removes modified user-owned files when the user confirms', async () => {
+    seedProject();
+    fs.writeFileSync(path.join(tmpDir, 'user', 'file.md'), 'modified user content', 'utf8');
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    jest.doMock('readline', () => ({
+      createInterface: () => ({
+        question: (_prompt, cb) => cb('yes'),
+        close: jest.fn(),
+      }),
+    }));
+
+    const uninstall = requireUninstall();
+    await uninstall(['--all']);
+
+    expect(fs.existsSync(path.join(tmpDir, 'user', 'file.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, LOCKFILE_NAME))).toBe(false);
   });
 });

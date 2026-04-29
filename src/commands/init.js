@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 const {
   loadManifest,
   getKitVersion,
@@ -12,69 +11,26 @@ const {
   writeLockfile,
   parseFlags,
 } = require('../utils');
-
-function isGitRepo(targetDir) {
-  return fs.existsSync(path.join(targetDir, '.git'));
-}
-
-function deriveGitEntries(manifest) {
-  const entries = new Set();
-  for (const file of manifest.files) {
-    entries.add(file.path);
-  }
-  entries.add('.copilot-kit.lock');
-  return Array.from(entries);
-}
-
-function promptGitChoice(entries) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-    console.log('  How should git handle the installed files?');
-    console.log('');
-    console.log('  Paths affected:');
-    entries.forEach((e) => console.log(`    ${e}`));
-    console.log('');
-    console.log('  [1] Exclude locally   — write to .git/info/exclude (your clone only)');
-    console.log('  [2] Add to .gitignore — shared with the team via .gitignore');
-    console.log('  [3] Track in git      — commit files with the repo');
-    console.log('');
-
-    rl.question('  Choice [1/2/3]: ', (answer) => {
-      rl.close();
-      const choice = answer.trim();
-      if (choice === '1') { resolve('git-exclude'); }
-      else if (choice === '2') { resolve('gitignore'); }
-      else { resolve('git-track'); }
-    });
-  });
-}
-
-function applyGitExclude(targetDir, entries) {
-  const excludePath = path.join(targetDir, '.git', 'info', 'exclude');
-  fs.mkdirSync(path.dirname(excludePath), { recursive: true });
-  const marker = '# copilot-workflow-kit';
-  const existing = fs.existsSync(excludePath) ? fs.readFileSync(excludePath, 'utf8') : '';
-  if (!existing.includes(marker)) {
-    fs.appendFileSync(excludePath, `\n${marker}\n${entries.join('\n')}\n`, 'utf8');
-  }
-}
-
-function applyGitignore(targetDir, entries) {
-  const gitignorePath = path.join(targetDir, '.gitignore');
-  const marker = '# copilot-workflow-kit';
-  const existing = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : '';
-  if (!existing.includes(marker)) {
-    fs.appendFileSync(gitignorePath, `\n${marker}\n${entries.join('\n')}\n`, 'utf8');
-  }
-}
+const {
+  GIT_MODE_EXCLUDE,
+  GIT_MODE_IGNORE,
+  GIT_MODE_TRACK,
+  applyGitMode,
+  deriveGitEntries,
+  deriveKnownGitEntries,
+  gitModeFromFlags,
+  isGitRepo,
+  promptGitChoice,
+} = require('../git-mode');
 
 /**
  * Init command — scaffold all kit files into the current project.
  * @param {string[]} flags
  */
 async function init(flags) {
-  const { force, gitExclude, gitignore, gitTrack } = parseFlags(flags);
+  const parsedFlags = parseFlags(flags);
+  const { force } = parsedFlags;
+  const flagGitMode = gitModeFromFlags(parsedFlags);
   const targetDir = process.cwd();
   const manifest = loadManifest();
   const version = getKitVersion();
@@ -122,42 +78,33 @@ async function init(flags) {
     installed++;
   }
 
-  writeLockfile(targetDir, { version, files: lockFiles });
-
   // Determine git handling
   const inGitRepo = isGitRepo(targetDir);
-  let gitChoice = null;
+  const gitEntries = deriveGitEntries(manifest);
+  let gitChoice = flagGitMode;
 
-  if (gitExclude) {
-    gitChoice = 'git-exclude';
-  } else if (gitignore) {
-    gitChoice = 'gitignore';
-  } else if (gitTrack) {
-    gitChoice = 'git-track';
-  } else if (inGitRepo && process.stdin.isTTY) {
+  if (!gitChoice && inGitRepo && process.stdin.isTTY) {
     console.log('');
-    gitChoice = await promptGitChoice(deriveGitEntries(manifest));
+    gitChoice = await promptGitChoice(gitEntries);
+  } else if (!gitChoice) {
+    gitChoice = GIT_MODE_TRACK;
   }
 
-  if (gitChoice === 'git-exclude') {
-    if (inGitRepo) {
-      applyGitExclude(targetDir, deriveGitEntries(manifest));
-    } else {
-      console.log('  Note: --git-exclude skipped (not a git repository)');
-      gitChoice = 'git-track';
-    }
-  } else if (gitChoice === 'gitignore') {
-    applyGitignore(targetDir, deriveGitEntries(manifest));
+  const gitResult = applyGitMode(targetDir, gitChoice, gitEntries, deriveKnownGitEntries(manifest, null));
+  if (gitResult.skippedExclude) {
+    console.log('  Note: --git-exclude skipped (not a git repository)');
   }
+
+  writeLockfile(targetDir, { version, gitMode: gitResult.mode, files: lockFiles });
 
   console.log('');
   console.log(`  Done: ${installed} installed, ${skipped} skipped`);
   console.log(`  Kit version: ${version}`);
 
-  if (gitChoice === 'git-exclude') {
+  if (gitResult.mode === GIT_MODE_EXCLUDE && gitResult.applied) {
     console.log('  Git: paths written to .git/info/exclude (local only)');
-  } else if (gitChoice === 'gitignore') {
-    console.log('  Git: paths appended to .gitignore');
+  } else if (gitResult.mode === GIT_MODE_IGNORE) {
+    console.log('  Git: paths written to .gitignore');
   } else {
     console.log('  Lockfile: .copilot-kit.lock (commit this file)');
   }
