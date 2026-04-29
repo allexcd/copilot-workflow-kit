@@ -2,11 +2,27 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const {
   hashFile,
+  loadManifest,
   readLockfile,
   parseFlags,
 } = require('../utils');
+const {
+  deriveKnownGitEntries,
+  removeGitModeBlocks,
+} = require('../git-mode');
+
+function promptRemoveModifiedFile(filePath) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(`  Remove locally modified ${filePath}? [y/N]: `, (answer) => {
+      rl.close();
+      resolve(['y', 'yes'].includes(answer.trim().toLowerCase()));
+    });
+  });
+}
 
 /**
  * Uninstall command — remove kit-installed files from the current project.
@@ -19,6 +35,7 @@ const {
 async function uninstall(flags) {
   const { dryRun, all, force } = parseFlags(flags);
   const targetDir = process.cwd();
+  const manifest = loadManifest();
   const lock = readLockfile(targetDir);
 
   console.log('');
@@ -53,12 +70,38 @@ async function uninstall(flags) {
       continue;
     }
 
-    if (ownership === 'kit-managed' && meta.hash && hashFile(absPath) !== meta.hash && !force) {
-      const verb = dryRun ? 'would skip' : 'skip';
-      console.log(`  ${verb}  ${filePath}  (locally modified, use --force to remove)`);
-      skipped++;
-      modifiedSkipped++;
-      continue;
+    if (meta.hash && hashFile(absPath) !== meta.hash && !force) {
+      if (ownership === 'kit-managed') {
+        const verb = dryRun ? 'would skip' : 'skip';
+        console.log(`  ${verb}  ${filePath}  (locally modified, use --force to remove)`);
+        skipped++;
+        modifiedSkipped++;
+        continue;
+      }
+
+      if (ownership === 'user-owned' && all) {
+        if (dryRun) {
+          console.log(`  would prompt  ${filePath}  (locally modified user-owned file)`);
+          skipped++;
+          modifiedSkipped++;
+          continue;
+        }
+
+        if (!process.stdin.isTTY) {
+          console.log(`  skip  ${filePath}  (locally modified user-owned file, confirmation required)`);
+          skipped++;
+          modifiedSkipped++;
+          continue;
+        }
+
+        const confirmed = await promptRemoveModifiedFile(filePath);
+        if (!confirmed) {
+          console.log(`  skip  ${filePath}  (locally modified user-owned file)`);
+          skipped++;
+          modifiedSkipped++;
+          continue;
+        }
+      }
     }
 
     const label = ownership === 'user-owned' ? '(user-owned)' : '(kit-managed)';
@@ -70,6 +113,19 @@ async function uninstall(flags) {
       removedDirs.add(path.dirname(absPath));
     }
     removed++;
+  }
+
+  const knownGitEntries = deriveKnownGitEntries(manifest, lock);
+  if (dryRun) {
+    console.log('  would clean  .gitignore and .git/info/exclude  (kit blocks)');
+  } else {
+    const cleaned = removeGitModeBlocks(targetDir, knownGitEntries);
+    if (cleaned.gitignore) {
+      console.log('  ✓  cleaned  .gitignore  (kit block)');
+    }
+    if (cleaned.gitExclude) {
+      console.log('  ✓  cleaned  .git/info/exclude  (kit block)');
+    }
   }
 
   // Clean up directories that are now empty, deepest first
@@ -96,7 +152,7 @@ async function uninstall(flags) {
   const lockPath = path.join(targetDir, '.copilot-kit.lock');
   if (modifiedSkipped > 0) {
     const verb = dryRun ? 'would keep' : 'keep';
-    console.log(`  ${verb}  .copilot-kit.lock  (modified kit-managed files remain)`);
+    console.log(`  ${verb}  .copilot-kit.lock  (modified files remain)`);
   } else if (!dryRun) {
     fs.rmSync(lockPath);
     console.log(`  ✓  removed  .copilot-kit.lock`);
@@ -111,7 +167,7 @@ async function uninstall(flags) {
     console.log(`  Done: ${removed} file(s) removed, ${skipped} skipped`);
   }
   if (modifiedSkipped > 0) {
-    console.log('  Run with --force to also remove locally modified kit-managed files');
+    console.log('  Run with --force to also remove locally modified files');
   } else if (skipped > 0 && !all) {
     console.log('  Run with --all to also remove user-owned files');
   }

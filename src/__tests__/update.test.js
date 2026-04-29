@@ -5,21 +5,22 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { LOCKFILE_NAME } = require('../../src/utils');
+const { KIT_BLOCK_BEGIN } = require('../../src/git-mode');
 
 let tmpDir;
 let mockTemplateDir;
 const originalCwd = process.cwd;
+const originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
 
 function hash(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-const mockManifest = {
-  files: [
-    { path: 'managed/file.md', ownership: 'kit-managed' },
-    { path: 'user/file.md', ownership: 'user-owned' },
-  ],
-};
+const baseManifestFiles = [
+  { path: 'managed/file.md', ownership: 'kit-managed' },
+  { path: 'user/file.md', ownership: 'user-owned' },
+];
+const mockManifest = { files: [] };
 
 const TEMPLATE_CONTENT = 'template v2 content';
 const ORIGINAL_CONTENT = 'template v1 content';
@@ -27,12 +28,11 @@ const ORIGINAL_CONTENT = 'template v1 content';
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cwk-update-'));
   mockTemplateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cwk-tpl-'));
+  mockManifest.files = baseManifestFiles.map((entry) => ({ ...entry }));
 
   // Create template files (representing the new kit version)
-  fs.mkdirSync(path.join(mockTemplateDir, 'managed'), { recursive: true });
-  fs.mkdirSync(path.join(mockTemplateDir, 'user'), { recursive: true });
-  fs.writeFileSync(path.join(mockTemplateDir, 'managed', 'file.md'), TEMPLATE_CONTENT, 'utf8');
-  fs.writeFileSync(path.join(mockTemplateDir, 'user', 'file.md'), 'user template', 'utf8');
+  writeTemplate('managed/file.md', TEMPLATE_CONTENT);
+  writeTemplate('user/file.md', 'user template');
 
   process.cwd = () => tmpDir;
   jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -52,6 +52,11 @@ beforeEach(() => {
 afterEach(() => {
   process.cwd = originalCwd;
   console.log.mockRestore();
+  if (originalStdinIsTTY) {
+    Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTY);
+  } else {
+    delete process.stdin.isTTY;
+  }
   jest.restoreAllMocks();
   jest.resetModules();
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -60,6 +65,12 @@ afterEach(() => {
 
 function requireUpdate() {
   return require('../../src/commands/update');
+}
+
+function writeTemplate(relativePath, content) {
+  const absPath = path.join(mockTemplateDir, relativePath);
+  fs.mkdirSync(path.dirname(absPath), { recursive: true });
+  fs.writeFileSync(absPath, content, 'utf8');
 }
 
 function seedProject(fileContent, lockHash) {
@@ -162,5 +173,138 @@ describe('update command', () => {
     expect(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8')).toBe(lockBefore);
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('dry run');
+  });
+
+  it('uses saved gitignore mode and refreshes entries for new files', async () => {
+    seedProject(ORIGINAL_CONTENT);
+    const lockPath = path.join(tmpDir, LOCKFILE_NAME);
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    lock.gitMode = 'gitignore';
+    fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n', 'utf8');
+    mockManifest.files.push({ path: 'managed/new.md', ownership: 'kit-managed' });
+    writeTemplate('managed/new.md', 'new managed content');
+    fs.writeFileSync(path.join(tmpDir, '.gitignore'), [
+      'node_modules/',
+      '# copilot-workflow-kit',
+      'managed/file.md',
+      '.copilot-kit.lock',
+      'dist/',
+      '',
+    ].join('\n'), 'utf8');
+
+    const update = requireUpdate();
+    await update([]);
+
+    expect(fs.readFileSync(path.join(tmpDir, 'managed', 'new.md'), 'utf8')).toBe('new managed content');
+    const gitignore = fs.readFileSync(path.join(tmpDir, '.gitignore'), 'utf8');
+    expect(gitignore).toContain('node_modules/');
+    expect(gitignore).toContain('dist/');
+    expect(gitignore).toContain(KIT_BLOCK_BEGIN);
+    expect(gitignore).toContain('managed/new.md');
+    expect(gitignore.split(KIT_BLOCK_BEGIN).length - 1).toBe(1);
+    const nextLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    expect(nextLock.gitMode).toBe('gitignore');
+    expect(nextLock.files['managed/new.md']).toBeDefined();
+  });
+
+  it('prompts for git mode on old interactive git installs', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.git', 'info'), { recursive: true });
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    jest.doMock('readline', () => ({
+      createInterface: () => ({
+        question: (_prompt, cb) => cb('2'),
+        close: jest.fn(),
+      }),
+    }));
+    seedProject(ORIGINAL_CONTENT);
+
+    const update = requireUpdate();
+    await update([]);
+
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.gitMode).toBe('gitignore');
+    expect(fs.readFileSync(path.join(tmpDir, '.gitignore'), 'utf8')).toContain(KIT_BLOCK_BEGIN);
+  });
+
+  it('skips git changes for old non-interactive git installs', async () => {
+    fs.mkdirSync(path.join(tmpDir, '.git', 'info'), { recursive: true });
+    seedProject(ORIGINAL_CONTENT);
+
+    const update = requireUpdate();
+    await update([]);
+
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.gitMode).toBeUndefined();
+    expect(fs.existsSync(path.join(tmpDir, '.gitignore'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, '.git', 'info', 'exclude'))).toBe(false);
+    expect(console.log.mock.calls.map(c => c[0]).join('\n')).toContain('old lockfile has no saved git mode');
+  });
+
+  it('scaffolds new user-owned files once when they are missing', async () => {
+    mockManifest.files.push({ path: 'user/new.md', ownership: 'user-owned' });
+    writeTemplate('user/new.md', 'new user content');
+    seedProject(ORIGINAL_CONTENT);
+
+    const update = requireUpdate();
+    await update([]);
+
+    expect(fs.readFileSync(path.join(tmpDir, 'user', 'new.md'), 'utf8')).toBe('new user content');
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.files['user/new.md']).toBeDefined();
+  });
+
+  it('does not overwrite existing new manifest paths without --force', async () => {
+    mockManifest.files.push({ path: 'managed/new.md', ownership: 'kit-managed' });
+    writeTemplate('managed/new.md', 'new managed content');
+    seedProject(ORIGINAL_CONTENT);
+    fs.writeFileSync(path.join(tmpDir, 'managed', 'new.md'), 'existing user content', 'utf8');
+
+    const update = requireUpdate();
+    await update([]);
+
+    expect(fs.readFileSync(path.join(tmpDir, 'managed', 'new.md'), 'utf8')).toBe('existing user content');
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, LOCKFILE_NAME), 'utf8'));
+    expect(lock.files['managed/new.md'].hash).toBe(hash('new managed content'));
+  });
+
+  it('removes obsolete unmodified kit-managed files from disk and lockfile', async () => {
+    seedProject(ORIGINAL_CONTENT);
+    const obsoletePath = path.join(tmpDir, 'managed', 'obsolete.md');
+    fs.writeFileSync(obsoletePath, 'obsolete kit content', 'utf8');
+    const lockPath = path.join(tmpDir, LOCKFILE_NAME);
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    lock.files['managed/obsolete.md'] = {
+      ownership: 'kit-managed',
+      hash: hash('obsolete kit content'),
+    };
+    fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n', 'utf8');
+
+    const update = requireUpdate();
+    await update([]);
+
+    expect(fs.existsSync(obsoletePath)).toBe(false);
+    const nextLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    expect(nextLock.files['managed/obsolete.md']).toBeUndefined();
+  });
+
+  it('keeps obsolete locally modified kit-managed files but stops tracking them', async () => {
+    seedProject(ORIGINAL_CONTENT);
+    const obsoletePath = path.join(tmpDir, 'managed', 'obsolete.md');
+    fs.writeFileSync(obsoletePath, 'user changed obsolete kit content', 'utf8');
+    const lockPath = path.join(tmpDir, LOCKFILE_NAME);
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    lock.files['managed/obsolete.md'] = {
+      ownership: 'kit-managed',
+      hash: hash('obsolete kit content'),
+    };
+    fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n', 'utf8');
+
+    const update = requireUpdate();
+    await update([]);
+
+    expect(fs.readFileSync(obsoletePath, 'utf8')).toBe('user changed obsolete kit content');
+    const nextLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    expect(nextLock.files['managed/obsolete.md']).toBeUndefined();
+    expect(console.log.mock.calls.map(c => c[0]).join('\n')).toContain('removed from kit, locally modified');
   });
 });

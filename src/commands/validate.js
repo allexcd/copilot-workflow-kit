@@ -7,6 +7,7 @@ const {
   getTemplatePath,
   readLockfile,
 } = require('../utils');
+const { VALID_GIT_MODES } = require('../git-mode');
 
 const VALID_OWNERSHIP = new Set(['kit-managed', 'user-owned']);
 
@@ -179,6 +180,9 @@ function validateLockfile(targetDir, manifest) {
   if (!lock.files || typeof lock.files !== 'object' || Array.isArray(lock.files)) {
     errors.push('.copilot-kit.lock must include a files object');
     return errors;
+  }
+  if (lock.gitMode !== undefined && !VALID_GIT_MODES.has(lock.gitMode)) {
+    errors.push('.copilot-kit.lock has invalid gitMode');
   }
 
   const manifestPaths = new Set((manifest.files || []).map((entry) => entry.path));
